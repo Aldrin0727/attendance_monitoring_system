@@ -1,0 +1,20 @@
+:root {
+  --dark: #114d70;
+  --pastel-blue: #c8d8e4;
+  --white: #fff;
+  --semi-white: #f2f2f2;
+  --base: #ffffff;
+  --super-dark: #1e6091;
+}
+body,#app,html {
+  margin: 0;
+  padding: 0;
+  top: 0;
+  font-family: "Poppins", sans-serif;
+  background-color: #fff;
+  color: #333;
+}
+
+.custom-badge {
+  font-size: 13px;
+}

@@ -7,7 +7,25 @@
     "build": "vue-cli-service build"
   },
   "dependencies": {
-    "vue": "^3.2.13"
+    "@fortawesome/fontawesome-svg-core": "^7.1.0",
+    "@fortawesome/free-brands-svg-icons": "^7.1.0",
+    "@fortawesome/free-regular-svg-icons": "^7.1.0",
+    "@fortawesome/free-solid-svg-icons": "^7.1.0",
+    "@fortawesome/vue-fontawesome": "^3.1.2",
+    "@fullcalendar/bootstrap5": "^6.1.19",
+    "@fullcalendar/core": "^6.1.19",
+    "@fullcalendar/daygrid": "^6.1.19",
+    "@fullcalendar/interaction": "^6.1.19",
+    "@fullcalendar/resource": "^6.1.19",
+    "@fullcalendar/vue3": "^6.1.19",
+    "apexcharts": "^5.3.6",
+    "bootstrap": "^5.3.8",
+    "bootstrap-icons": "^1.13.1",
+    "feather-icons": "^4.29.2",
+    "jquery": "^3.7.1",
+    "vue": "^3.2.13",
+    "vue-fontawesome": "^0.0.2",
+    "vue-router": "^4.6.3"
   },
   "devDependencies": {
     "@vue/cli-service": "~5.0.0"

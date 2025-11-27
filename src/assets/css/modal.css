@@ -1,0 +1,124 @@
+.modal {
+   top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);  /* Dark background */
+  display: flex;
+  justify-content: center;
+  align-items: start;
+  z-index: 1050;
+}
+
+.modal-dialog {
+  width: 100%;
+  margin: 40px;
+  position: relative;
+  top: 0; 
+  max-width: 700px;
+  background-color: #fff;
+  border-radius: 8px; 
+}
+
+
+.btn-secondary {
+  box-shadow: none;
+}
+
+.modal-title {
+  color: #2b6777;
+}
+
+label,
+th,
+.reply{
+  font-size: 14px;
+}
+
+th {
+  color: #2b6777;
+}
+
+
+.reply-box .bg-light {
+    background-color: #c3f2f1 !important;
+     margin: 0;
+    padding: 0;
+  }
+
+.reply-box a {
+    font-size: 13px;
+    text-decoration: underline;
+    word-break: break-all;
+    margin: 0;
+    padding: 0;
+    color: #317e93;
+}
+
+.reply-box a:hover{
+  color: #163a44;
+}
+
+.reply-box i.fas.fa-paperclip {
+    font-size: 14px;
+     margin: 0;
+    padding: 0;
+    color: #2b6777;
+}
+
+
+/* Custom Form Input Styling */
+
+.form-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #2b6777;
+  padding: 0 !important;
+  margin: 2px !important;
+}
+
+/* Styling the Form Inputs */
+.form-control,
+.form-select {
+  /* border-radius: 8px; */
+  border: 1px solid #dcd7d7;
+  font-size: 14px !important;
+  width: 100%;
+}
+
+/* Custom Select Box */
+.custom-dropdown-wrapper {
+  position: relative;
+}
+
+.custom-dropdown {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  padding-right: 30px;
+  /* Space for the arrow */
+}
+
+.dropdown-arrow {
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  pointer-events: none;
+  transform: translateY(-50%);
+  font-size: 14px;
+  color: #555;
+}
+
+
+.modal-footer .btn {
+  width: 30%;
+  /* padding: 0.5rem 1.25rem; */
+}
+
+.modal-footer{
+  padding: 10px 0;
+}
+
+.modal-header{
+  padding: 10px 20px;
+}

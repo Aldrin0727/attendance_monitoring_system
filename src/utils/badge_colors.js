@@ -1,0 +1,11 @@
+export const roleColors = {
+  admin: "badge bg-primary text-white custom-badge fw-normal",
+  system_admin: "badge bg-info text-dark custom-badge fw-normal",
+  user: "badge bg-secondary text-white custom-badge fw-normal",
+};
+
+export const jobTitleColors = {
+  Manager: "badge bg-primary text-white custom-badge fw-normal",
+  "Department Head": "badge bg-success text-white custom-badge fw-normal",
+  Staff: "badge bg-dark text-white custom-badge fw-normal",
+};

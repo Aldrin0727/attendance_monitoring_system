@@ -1,0 +1,260 @@
+@import url(../../../public/global.css);
+.pages-label {
+  font-size: 14px;
+}
+/* Sidebar Container */
+.sidebar {
+  position: fixed;
+  flex-direction: column;
+  justify-content: space-between;
+  font-size: 15px;
+  height: 100vh;
+  width: 250px;
+  background-color: #699dc8;
+  color: #f8f7ff;
+  padding: 10px;
+  transition: all 0.3s;
+  /* overflow: hidden; */
+  overflow-y: auto; /* Kung mahaba ang menu, dapat may scroll */
+  z-index: 999;
+  transition: width 0.3s ease;
+  left: 0;
+}
+
+/* Collapsed Sidebar */
+.sidebar.active {
+  /* width: 80px; */
+  width: 250px;
+}
+
+/* Sidebar Header */
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.logo {
+  width: 95px;
+  transition: 0.3s;
+}
+
+.sidebar-content {
+  flex: 1;
+  overflow-y: auto;
+  padding-bottom: 20px;
+}
+
+/* Menu List */
+.menu-list,
+.user-manual-button {
+  list-style: none;
+  padding: 0;
+}
+
+.menu-list li {
+  padding: 8px;
+  display: flex;
+  align-items: flex-start;
+  border-radius: 5px;
+  transition: background 0.3s;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  flex-direction: column;
+  position: relative;
+  justify-content: space-between;
+  line-height: 1.6;
+}
+
+.menu-list li a {
+  color: white;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  cursor: pointer;
+}
+
+.menu-list li i,
+.feather-icons {
+  margin-right: 12px;
+  font-size: 16px;
+}
+
+/* Active State Styling */
+.menu-list li.active,
+.submenu li.active,
+.sub-submenu li.active {
+  /* background: var(--white); */
+  background: #f9f9f9;
+  color: var(--super-dark);
+  font-weight: bold;
+  border-left: 2px solid var(--dark);
+  /* line-height: 1.6; */
+}
+
+.menu-list li:hover,
+.submenu li:hover,
+.sub-submenu li:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--white);
+}
+
+/* Hide text when collapsed */
+.sidebar.active .menu-list li span {
+  display: none;
+}
+
+/* Dropdown Menu */
+.submenu {
+  list-style: none;
+  padding-left: 15px;
+  width: 100%;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 5px;
+  margin-top: 5px;
+  font-size: 100px !important;
+}
+
+.submenu li {
+  padding: 8px 10px;
+  cursor: pointer;
+  transition: background 0.3s;
+  width: 100%;
+  /* font-size: 13px !important; */
+}
+
+.submenu li:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.dropdown-icon {
+  margin-left: auto;
+  transition: transform 0.3s;
+}
+
+.dropdown-icon.open {
+  transform: rotate(180deg);
+}
+
+/* Show Nested Dropdown When Active */
+.sub-submenu.active {
+  display: block;
+}
+
+/* Submenu Items */
+.submenu li,
+.sub-submenu li {
+  cursor: pointer;
+  transition: background 0.3s;
+  font-size: 14px;
+}
+
+.menu-items {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+/* Sidebar Footer (Sign Out) */
+.sidebar-footer {
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  /* padding-top: 8px; */
+}
+
+.sidebar-footer .menu-list {
+  list-style: none;
+  padding: 0;
+}
+
+.sidebar-footer li {
+  /* padding: 8px; */
+  transition: background 0.3s;
+  cursor: pointer;
+}
+
+.sidebar-footer li:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.logout {
+  color: #ff4d4d;
+  /* font-weight: bold; */
+}
+
+/* Scrollbar Styling for Sidebar */
+.sidebar-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sidebar-content::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.3);
+  border-radius: 3px;
+}
+
+.sidebar-content::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.5);
+}
+
+/* Responsive Behavior */
+@media (max-width: 768px) {
+  .sidebar {
+    width: 200px;
+  }
+
+  .sidebar.active {
+    width: 60px;
+  }
+
+  .logo {
+    width: 100px;
+  }
+}
+
+.user-manual-button {
+  background-color: transparent;
+  color: white;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px;
+  line-height: 1.6;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.user-manual-button:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.breadcrumbs ul {
+  list-style-type: none;
+  display: flex;
+  padding-left: 10px;
+  margin-bottom: 0;
+}
+
+.breadcrumbs li {
+  margin-right: 5px;
+}
+
+.breadcrumbs a {
+  color: #2b6777;
+  text-decoration: none;
+}
+
+.breadcrumbs span {
+  color: #2b6777;
+}
+
+/* collapse on small screens */
+@media (max-width: 991px) {
+  .sidebar {
+    width: 250px;
+  }
+  .sidebar .label {
+    display: none; /* hide text labels */
+  }
+}

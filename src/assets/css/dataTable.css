@@ -1,0 +1,24 @@
+.custom-table, .dt-info, .dt-length, .dt-search, .dt-paging {
+  font-size: 14px;
+}
+.custom-table thead th {
+  text-align: center !important;
+  vertical-align: middle !important;
+}
+.custom-table tbody td {
+  text-align: center !important;
+}
+
+.dt-column-title{
+  color: #333
+}
+
+table {
+  width: 100%;
+  text-align: center; /* Centers all text inside the table */
+}
+
+td, th {
+  text-align: center; /* Centers text inside table cells */
+  vertical-align: middle; /* Vertically aligns the content */
+}
