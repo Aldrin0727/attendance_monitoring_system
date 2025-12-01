@@ -1,9 +1,18 @@
+<<<<<<< HEAD
 from flask import Flask, request, jsonify, session, g  # type: ignore
 from flask_cors import CORS, cross_origin              # type: ignore
 from flask_mysqldb import MySQL # type: ignore
 import MySQLdb.cursors                                 # type: ignore
 from config import Config
 from dotenv import load_dotenv                         # type: ignore
+=======
+from flask import Flask, request, jsonify, session, g # type: ignore
+from flask_cors import CORS # type: ignore
+from flask_mysqldb import MySQL # type: ignore
+import MySQLdb.cursors # type: ignore
+from config import Config # type: ignore
+from dotenv import load_dotenv # type: ignore
+>>>>>>> origin/aldrin_branch
 import os
 import logging
 from plugins import mysql  
@@ -17,7 +26,10 @@ app.config.from_object(Config)
 
 
 CORS(app)
+<<<<<<< HEAD
 CORS(app, resources={r"/*": {"origins": "http://0.0.0.0"}}, supports_credentials=True)
+=======
+>>>>>>> origin/aldrin_branch
 
 mysql = MySQL(app)
 
@@ -25,9 +37,11 @@ mysql = MySQL(app)
 logging.basicConfig(level=logging.INFO)
 
 # Register blueprints
-from models.create_leave import create_leave_bp
+from models.Leaves import Leaves_bp
+from models.users import users_bp
 
-app.register_blueprint(create_leave_bp)
+app.register_blueprint(leave_bp)
+app.register_blueprint(users_bp)
 
 
 def get_db():

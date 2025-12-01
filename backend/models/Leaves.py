@@ -7,13 +7,20 @@ create_leave_bp = Blueprint('create_leave', __name__)
 @create_leave_bp.route('/leave_details', methods=['POST'])
 def get_leave_details():
     try:
+        data = request.get_json()
+
+
+
+
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
-        cursor.execute("SELECT * from Leave_Details where id = 1")
+        cursor.execute("SELECT * from Leave_Details")
         leave_details = cursor.fetchall()
+<<<<<<< HEAD:backend/models/create_leave.py
         # print(leave_details)
+=======
+>>>>>>> origin/aldrin_branch:backend/models/Leaves.py
         cursor.close()
-        # print (f"leave_details")
-        
         return jsonify(leave_details), 200
     except Exception as e:
         return jsonify({"error": str(e)}),500
+
