@@ -19,17 +19,17 @@
                             <div class="row">
                                 <div class="col-12 mb-3">
                                     <label for="user" class="form-label label-sm">USER</label>
-                                    <input type="text" id="user" class="form-control" v-model="user" readonly />
+                                    <input type="text" id="user" class="form-control"  v-model="fullName" readonly />
                                 </div>
                             </div>
                             <div class="row mb-3">
                                 <div class="col-6">
                                     <label for="user" class="form-label label-sm">Position</label>
-                                    <input type="text" id="user" class="form-control" v-model="position" readonly />
+                                    <input type="text" id="user" class="form-control" v-model="user.position" readonly />
                                 </div>
                                 <div class="col-6">
                                     <label for="user" class="form-label label-sm">department</label>
-                                    <input type="text" id="user" class="form-control" v-model="department" readonly />
+                                    <input type="text" id="department" class="form-control" :value="user.department_name" readonly />
                                 </div>
                             </div>
                             <div class="row mb-1">
@@ -112,9 +112,9 @@
 
 <script>
 import API_BASE from '@/utils/api_config';
+import { getUserData, fetchDepartmentName } from '@/utils/get_user_data';
 
 export default {
-    name: 'file_leave_modal',
     props: {
         isVisible: {
             type: Boolean,
@@ -123,6 +123,7 @@ export default {
     },
     data() {
         return {
+            user: getUserData() || {},
             selectedTypeofLeave: "",
             leaveForm: {
                 date_from: "",
@@ -131,6 +132,14 @@ export default {
             },
             leave_reason: "",
         };
+    },
+    computed:{
+        fullName() {
+            return `${this.user.first_name} ${this.user.last_name}`.trim();
+        },
+    },
+    mounted(){
+      
     },
     methods: {
         closeModal() {
