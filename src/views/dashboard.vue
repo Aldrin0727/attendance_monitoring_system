@@ -14,7 +14,7 @@
   <div class="row mt-3">
     <div class="col-lg-12 text-end">
       <button class="btn btn-secondary" @click="file_leave_btn">
-        <font-awesome-icon :icon="['fas', 'circle-plus']" class="me-2"/> File a Leave
+        <font-awesome-icon :icon="['fas', 'circle-plus']" class="me-2" /> File a Leave
       </button>
     </div>
   </div>
@@ -97,7 +97,7 @@
       </div>
     </div>
   </div>
-    <file_leave_modal v-if="is_file_leave_modal_visible" :isVisible="is_file_leave_modal_visible"
+  <file_leave_modal v-if="is_file_leave_modal_visible" :isVisible="is_file_leave_modal_visible"
     @close="close_file_leave_modal" />
 </template>
 <script>
@@ -128,9 +128,9 @@ export default {
         themeSystem: 'bootstrap5',
         dateClick: this.handleDateClick,
         events: [
-          { title: 'Event 1', date: '2025-11-10', color: '#ff7f50' },
-          { title: 'Event 2', date: '2025-11-12', color: '#7f8c8d' },
-          { title: 'Event 3', date: '2025-11-14', color: '#3498db' }
+          // { title: 'Event 1', date: '2025-11-10', color: '#ff7f50' },
+          // { title: 'Event 2', date: '2025-11-12', color: '#7f8c8d' },
+          // { title: 'Event 3', date: '2025-11-14', color: '#3498db' }
         ],
         headerToolbar: {
           left: 'prev,next today',
@@ -142,9 +142,13 @@ export default {
     }
   },
   methods: {
-    file_leave_btn()  {
+    file_leave_btn() {
       // alert('open modal')
       this.is_file_leave_modal_visible = true;
+    },
+
+    close_file_leave_modal() {
+      this.is_file_leave_modal_visible = false;
     },
 
     handleDateClick() {
@@ -154,7 +158,7 @@ export default {
       const event = info.event;
       event.setProp('backgroundColor', event.extendedProps.color);
       event.setProp('borderColor', event.extendedProps.color);
-      event.setProp('textColor', '#ffffff'); 
+      event.setProp('textColor', '#ffffff');
     }
   }
 }
