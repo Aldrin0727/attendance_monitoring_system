@@ -15,10 +15,6 @@ def get_leave_details():
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
         cursor.execute("SELECT * from Leave_Details")
         leave_details = cursor.fetchall()
-<<<<<<< HEAD:backend/models/create_leave.py
-        # print(leave_details)
-=======
->>>>>>> origin/aldrin_branch:backend/models/Leaves.py
         cursor.close()
         return jsonify(leave_details), 200
     except Exception as e:

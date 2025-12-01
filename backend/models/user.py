@@ -1,22 +1,22 @@
 from flask import Blueprint, request, jsonify, session # type: ignore
 import hashlib
-from utils.plugins import mysql 
+from plugins import mysql 
 import MySQLdb.cursors # type: ignore
 from flask_mysqldb import MySQL # type: ignore
 
 users_bp = Blueprint('users', __name__)
 
 @users_bp.route('/login', methods=['POST'])
-def login();
+def login():
 
     data = request.json
     username = data.get('username')
     password =data.get('password')
 
     if not username and not password:
-        return json({"error": "Username and Password is Missing."}),400
+        return jsonify({"error": "Username and Password is Missing."}),400
 
-    cursor.mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
     cursor.execute("SELECT * FROM users WHERE username = %s AND acc_status = 1", (username,))
     user = cursor.fetchone()
     cursor.close()
