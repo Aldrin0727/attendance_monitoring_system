@@ -1,5 +1,5 @@
 .modal {
-   top: 0;
+  top: 0;
   left: 0;
   width: 100%;
   height: 100%;
@@ -29,45 +29,13 @@
   color: #2b6777;
 }
 
-label,
-th,
-.reply{
+label, th{
   font-size: 14px;
 }
 
 th {
   color: #2b6777;
 }
-
-
-.reply-box .bg-light {
-    background-color: #c3f2f1 !important;
-     margin: 0;
-    padding: 0;
-  }
-
-.reply-box a {
-    font-size: 13px;
-    text-decoration: underline;
-    word-break: break-all;
-    margin: 0;
-    padding: 0;
-    color: #317e93;
-}
-
-.reply-box a:hover{
-  color: #163a44;
-}
-
-.reply-box i.fas.fa-paperclip {
-    font-size: 14px;
-     margin: 0;
-    padding: 0;
-    color: #2b6777;
-}
-
-
-/* Custom Form Input Styling */
 
 .form-label {
   font-size: 14px;
@@ -84,6 +52,7 @@ th {
   border: 1px solid #dcd7d7;
   font-size: 14px !important;
   width: 100%;
+  
 }
 
 /* Custom Select Box */
@@ -110,15 +79,35 @@ th {
 }
 
 
-.modal-footer .btn {
-  width: 30%;
-  /* padding: 0.5rem 1.25rem; */
-}
 
 .modal-footer{
-  padding: 10px 0;
+  padding: 10px;
 }
 
 .modal-header{
   padding: 10px 20px;
+}
+
+.section {
+  background: #fafbfc;
+  border: 1px solid #eef0f2;
+  border-radius: 12px;
+  padding: 14px;
+  margin-bottom: 10px;
+}
+
+
+.section-title {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: #667085;
+  margin-bottom: 5px;
+}
+
+.label-sm {
+  font-size: 12px;
+  letter-spacing: .02em;
+  color: #2b6777;
 }

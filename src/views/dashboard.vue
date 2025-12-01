@@ -13,7 +13,7 @@
   <!-- Button for filing leave -->
   <div class="row mt-3">
     <div class="col-lg-12 text-end">
-      <button class="btn btn-secondary" @click="fileLeave">
+      <button class="btn btn-secondary" @click="file_leave_btn">
         <font-awesome-icon :icon="['fas', 'circle-plus']" class="me-2"/> File a Leave
       </button>
     </div>
@@ -97,6 +97,8 @@
       </div>
     </div>
   </div>
+    <file_leave_modal v-if="is_file_leave_modal_visible" :isVisible="is_file_leave_modal_visible"
+    @close="close_file_leave_modal" />
 </template>
 <script>
 import FullCalendar from '@fullcalendar/vue3'
@@ -107,14 +109,19 @@ import datetime from '@/components/datetime.vue';
 import bootstrap5Plugin from '@fullcalendar/bootstrap5';
 import 'bootstrap/dist/css/bootstrap.css';
 import 'bootstrap-icons/font/bootstrap-icons.css';
+import file_leave_modal from '@/components/modals/file_leave_modal.vue';
 
 export default {
   components: {
     FullCalendar,
-    datetime
+    datetime,
+    file_leave_modal
   },
   data() {
     return {
+      is_file_leave_modal_visible: false,
+
+
       calendarOptions: {
         plugins: [dayGridPlugin, interactionPlugin, bootstrap5Plugin],
         initialView: 'dayGridMonth',
@@ -135,7 +142,12 @@ export default {
     }
   },
   methods: {
-    handleDateClick: function (arg) {
+    file_leave_btn()  {
+      // alert('open modal')
+      this.is_file_leave_modal_visible = true;
+    },
+
+    handleDateClick() {
       alert('You clicked on: ' + arg.dateStr)
     },
     customEventRendering(info) {
