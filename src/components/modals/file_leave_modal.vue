@@ -50,36 +50,41 @@
                             <hr class="mt-0">
                             <div class="row">
                                 <div class="col-6 mb-3">
-                                    <label for="user" class="form-label label-sm">Type of Leave</label>
-                                    <select id="system_type" v-model="selectedTypeofLeave" class="form-select">
+                                    <label for="user" class="form-label label-sm">Type of Leave <strong style="color: red">*</strong></label>
+                                    <select v-model="selectedTypeofLeave" class="form-select">
                                         <option disabled value="">Select Type of Leave</option>
                                         <option value="SL">Sick Leave</option>
                                         <option value="VL">Vacation Leave</option>
                                         <option value="EL">Emergency Leave</option>
                                     </select>
-
+                                </div>
+                                <div class="col-6">
+                                    <label for="user" class="form-label label-sm">Total Leave Days</label>
+                                    <input type="text" id="user" class="form-control leave_days" readonly />
                                 </div>
                             </div>
+
                             <div class="row mb-3">
                                 <div class="col-6">
-                                    <label for="user" class="form-label label-sm">Position</label>
-                                    <input type="text" id="user" class="form-control" readonly />
+                                    <label for="date_from" class="form-label label-sm">Date of Leave From <strong style="color: red">*</strong></label>
+                                    <input type="datetime-local" id="date_from" class="form-control"
+                                        v-model="leaveForm.date_from" required/>
                                 </div>
                                 <div class="col-6">
-                                    <label for="user" class="form-label label-sm">department</label>
-                                    <input type="text" id="user" class="form-control" readonly />
+                                    <label for="date_to" class="form-label label-sm">Date of Leave To <strong style="color: red">*</strong></label>
+                                    <input type="datetime-local" id="date_to" class="form-control"
+                                        v-model="leaveForm.date_to" required/>
                                 </div>
                             </div>
-                            <div class="row mb-1">
-                                <div class="col-6">
-                                    <label for="user" class="form-label label-sm">Address</label>
-                                    <input type="text" id="user" class="form-control" readonly />
-                                </div>
-                                <div class="col-6">
-                                    <label for="user" class="form-label label-sm">Contact Number</label>
-                                    <input type="text" id="user" class="form-control" readonly />
+
+                            <div class="row mb-3">
+                                <div class="col-12 ">
+                                    <label for="date_to" class="form-label label-sm">Reason for leave <strong style="color: red">*</strong></label>
+                                    <textarea class="form-control" rows="2" id="leave_reason" v-model="leave_reason"
+                                        required></textarea>
                                 </div>
                             </div>
+
                         </div>
 
 
@@ -87,11 +92,11 @@
 
                     <!-- Modal Footer -->
                     <div class="modal-footer mt-2">
-                        <!-- <button type="submit" class="btn btn-success">Submit</button> -->
+                        <button type="submit" class="btn btn-success">Submit</button>
 
-                        <span>
+                        <!-- <span>
                             Submit
-                        </span>
+                        </span> -->
 
                         <button type="button" class="btn btn-info" @click="$emit('close')">Close</button>
                     </div>
@@ -117,6 +122,11 @@ export default {
     data() {
         return {
             selectedTypeofLeave: "",
+            leaveForm: {
+                leave_date_from: "",
+                leave_date_to: "",
+               
+            },
         }
 
     },
@@ -124,32 +134,10 @@ export default {
 
     },
     mounted() {
-        this.fetchUserDetails();
+        // this.fetchUserDetails();
     },
     methods: {
-        fetchUserDetails() {
-            fetch(`${API_BASE}/leave_details`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({})
-            })
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error("Failed to fetch departments");
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    // this.leave_details = data;
-                    console.log(data)
-                })
-                .catch(error => {
-                    console.error("Error fetching departments:", error);
-                    alert("Failed to fetch departments.");
-                });
-        },
+        
     },
     computed: {
 
@@ -181,5 +169,20 @@ input:focus {
 
 .modal-title {
     color: #699dc8
+}
+
+.form-control, .form-select{
+    background-color: #e9ecef !important;
+}
+
+.leave_days{
+    background-color: #b3cadc !important;
+    border: #fff !important;
+
+}
+
+#leave_reason:focus{
+    background-color: #fff !important;
+    font-size: 12px !important;
 }
 </style>

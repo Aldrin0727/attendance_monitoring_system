@@ -1,0 +1,45 @@
+/* Title Color */
+
+
+.swal-title-success {
+    color: #32BA7C !important; /* Change to any color */
+    font-weight: bolder;
+    font-size:2em !important;
+    margin-top: -10px;
+}
+
+.swal-text-success {
+    color: #135B3B !important; /* Change to any color */
+    font-weight: semi-bold;
+}
+
+.swal-password {
+    margin-top: -10px;
+}
+
+.swal-text-success-create-ticket{
+    padding-top: 10px;
+    font-size: 14px;
+}
+
+.swal-popup-success{
+    background-color: #e2eee9 !important;
+}
+.swal-confirm-button{
+    background-color: #28a745 !important; /* Green */
+    color: white !important;
+    font-weight: bold;
+    margin-top: -10px;
+}
+
+.swal2-confirm{
+    background-color: #28a745 !important; /* Green */
+    color: white !important;
+}
+
+.swal2-cancel{
+    background-color: #E5394B !important; /* Green */
+    color: white !important;
+}
+
+ .swal2-popup { font-family: 'Poppins', sans-serif; }
