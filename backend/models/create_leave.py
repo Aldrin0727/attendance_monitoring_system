@@ -1,9 +1,6 @@
-# routes/dashboard_faves.py
 from flask import Blueprint, request, jsonify, session  # type: ignore
 import MySQLdb.cursors                                 # type: ignore
-from flask_mysqldb import MySQL
-
-mysql = MySQL()
+from plugins import mysql 
 
 create_leave_bp = Blueprint('create_leave', __name__)
 
@@ -13,7 +10,7 @@ def get_leave_details():
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
         cursor.execute("SELECT * from Leave_Details where id = 1")
         leave_details = cursor.fetchall()
-        print(leave_details)
+        # print(leave_details)
         cursor.close()
         # print (f"leave_details")
         

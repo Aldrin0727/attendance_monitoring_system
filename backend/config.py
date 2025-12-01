@@ -3,11 +3,11 @@ from dotenv import load_dotenv #type: ignore
 load_dotenv()
 
 class Config:
-#     # MYSQL_HOST = 'localhost'
-#     # MYSQL_USER = 'root'
-#     # MYSQL_PASSWORD = ''
-#     # MYSQL_DB = 'ticketing' 
-#     # MYSQL_PORT = 3306
+    # MYSQL_HOST = '192.168.0.237'
+    # MYSQL_USER = 'root'
+    # MYSQL_PASSWORD = 'cosmic020486'
+    # MYSQL_DB = 'attendace_system' 
+    # MYSQL_PORT = 3306
 
 #     MYSQL_HOST = os.getenv('MYSQL_HOST')
 #     MYSQL_USER = os.getenv('MYSQL_USER')
