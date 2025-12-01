@@ -21,16 +21,8 @@ def login():
     # cursor.execute("SELECT * FROM users WHERE username = %s AND acc_status = 1", (username,))
     query = f"""
         SELECT 
-            u.id,
-            u.first_name,
-            u.last_name,
-            u.username,
-            u.email,
+            u.*,
             u.department AS dept_code,
-            u.first_login,
-            u.role,
-            u.job_title,
-            u.password,
             d.department AS department_name   
         FROM `{Config.MYSQL_DB2}`.`users` AS u
         LEFT JOIN `{Config.MYSQL_DB2}`.`departments` AS d
