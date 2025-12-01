@@ -26,10 +26,10 @@ mysql = MySQL(app)
 logging.basicConfig(level=logging.INFO)
 
 # Register blueprints
-from models.Leaves import Leaves_bp
+# from models.Leaves import Leaves_bp
 from models.user import users_bp
 
-app.register_blueprint(Leaves_bp)
+# app.register_blueprint(Leaves_bp)
 app.register_blueprint(users_bp)
 
 
