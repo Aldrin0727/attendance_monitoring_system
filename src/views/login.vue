@@ -5,7 +5,7 @@
       <div id="loginForm" class="border">
         <img alt="logo" class="mx-auto mt-4" src="../assets/images/asset_logo.png" width="45%" />
         <h2 class="title text-center">USER LOGIN</h2>
-        <form @submit.prevent="btn_login" class="mt-5">
+        <form @submit.prevent="btn_login" class="mt-4">
           <div class="mb-1">
             <div class="input-group">
               <span class="input-group-text"><i class="fa fa-user"></i></span>
@@ -29,13 +29,13 @@
           </div>
 
           <div class="mt-4 d-flex justify-content-center">
-            <button type="submit" class="btn btn-login w-50">LOGIN</button>
+            <button type="submit" class="btn btn-secondary w-50">LOGIN</button>
           </div>
         </form>
       </div>
       <div class="left-box">
         <!-- <img alt="Logo with a computer and gear icon" class="mx-auto" src="../assets/images/asset_logo.png" -->
-        <img alt="Logo with a computer and gear icon" class="mx-auto" src="../assets/images/asset_logo_3.gif"
+        <img alt="Logo with a computer and gear icon" class="mx-auto" src="../assets/images/asset_logo_4.png"
           width="90%" />
       </div>
 
@@ -76,30 +76,12 @@ export default{
         body: JSON.stringify({ username: this.username, password: this.password })
       })
         .then(response => {
-          // console.log("Response:", response);
           return response.json();
         })
         .then(data => {
-          if (data.first_login === 0) {
-            Swal.fire({
-              icon: "warning",
-              title: "First Login",
-              text: "You must change your password.",
-              confirmButtonText: "Change Password"
-            }).then(() => {
-              this.isChangePasswordVisible = true;
-            });
-          } else if (data.user) {
+          if (data.user) {
             localStorage.setItem("user", JSON.stringify(data.user));
-            // this.$router.push("/dashboard");
-              //  console.log(data.user.department)
-            if (data.user.role === 'system_admin' || data.user.job_title === 'Department Head' || data.user.role === 'admin' || data.user.department === 'SEC') {
               this.$router.push("/dashboard");
-            // } else if (data.user.department === 'SEC'){
-            //   this.$router.push("/forms/for_approval_forms")
-            }else {
-              this.$router.push("/tickets/my_tickets");
-            }
           } else {
             Swal.fire({ icon: "error", title: "Login Failed", text: data.error || "Unknown error." });
           }
@@ -115,7 +97,7 @@ export default{
 
 <style scoped>
 @import url(../assets/css/buttons.css);
-@import url(../../public/global.css);
+
 
 .title {
   font-weight: 800;
@@ -143,8 +125,14 @@ body {
   background-size: cover;
   margin: 0;
   padding: 0;
+  font-family: "Poppins", sans-serif;
 }
 
+.btn-secondary{
+   border-radius: 9999px;
+   font-weight: 700;
+   letter-spacing: .06em;
+}
 
 
 .left-box {

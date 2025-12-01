@@ -15,22 +15,21 @@ const routes = [
   },
 ];
 
-// const router = createRouter({
-//   history: createWebHistory(),
-//   routes,
-// });
+
+const router = createRouter({
+  history: createWebHistory(), // Palitan ito
+  routes
+});
 
 // Navigation Guard
-// router.beforeEach((to, from, next) => {
-//   const isAuthenticated = localStorage.getItem('user');
-//   if (to.meta.requiresAuth && !isAuthenticated) {
-//     next('/'); // Redirect to login if not authenticated
-//   } else {
-//     next();
-//   }
-// });
+router.beforeEach((to, from, next) => {
+  const isAuthenticated = localStorage.getItem("user");
 
-export default createRouter({
-  history: createWebHistory(),
-  routes,
+  if (to.meta.requiresAuth && !isAuthenticated) {
+    next("/"); // Redirect to login if not authenticated
+  } else {
+    next();
+  }
 });
+export default router
+  
