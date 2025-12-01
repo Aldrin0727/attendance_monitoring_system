@@ -1,9 +1,9 @@
-from flask import Flask, request, jsonify, session, g 
-from flask_cors import CORS
+from flask import Flask, request, jsonify, session, g # type: ignore
+from flask_cors import CORS # type: ignore
 from flask_mysqldb import MySQL # type: ignore
-import MySQLdb.cursors
-from config import Config
-from dotenv import load_dotenv
+import MySQLdb.cursors # type: ignore
+from config import Config # type: ignore
+from dotenv import load_dotenv # type: ignore
 import os
 import logging
 from flask_cors import cross_origin # type: ignore
@@ -16,15 +16,18 @@ app.config['SESSION_TYPE'] = 'filesystem'
 app.config.from_object(Config)
 
 CORS(app)
+
 mysql = MySQL(app)
 
 # Initialize logging
 logging.basicConfig(level=logging.INFO)
 
 # Register blueprints
-from models.create_leave import create_leave_bp
+from models.Leaves import Leaves_bp
+from models.users import users_bp
 
-app.register_blueprint(create_leave_bp)
+app.register_blueprint(leave_bp)
+app.register_blueprint(users_bp)
 
 def get_db():
     if 'db' not in g:
