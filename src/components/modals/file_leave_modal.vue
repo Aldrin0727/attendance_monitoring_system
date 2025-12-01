@@ -19,27 +19,27 @@
                             <div class="row">
                                 <div class="col-12 mb-3">
                                     <label for="user" class="form-label label-sm">USER</label>
-                                    <input type="text" id="user" class="form-control" readonly />
+                                    <input type="text" id="user" class="form-control" v-model = "user" readonly />
                                 </div>
                             </div>
                             <div class="row mb-3">
                                 <div class="col-6">
                                     <label for="user" class="form-label label-sm">Position</label>
-                                    <input type="text" id="user" class="form-control" readonly />
+                                    <input type="text" id="user" class="form-control" v-model = "position" readonly />
                                 </div>
                                 <div class="col-6">
                                     <label for="user" class="form-label label-sm">department</label>
-                                    <input type="text" id="user" class="form-control" readonly />
+                                    <input type="text" id="user" class="form-control" v-model = "department" readonly />
                                 </div>
                             </div>
                             <div class="row mb-1">
                                 <div class="col-6">
                                     <label for="user" class="form-label label-sm">Address</label>
-                                    <input type="text" id="user" class="form-control" readonly />
+                                    <input type="text" id="user" class="form-control" v-model = "address" readonly />
                                 </div>
                                 <div class="col-6">
                                     <label for="user" class="form-label label-sm">Contact Number</label>
-                                    <input type="text" id="user" class="form-control" readonly />
+                                    <input type="text" id="user" class="form-control" v-model = "contact" readonly />
                                 </div>
                             </div>
                         </div>
@@ -60,7 +60,7 @@
                                 </div>
                                 <div class="col-6">
                                     <label for="user" class="form-label label-sm">Total Leave Days</label>
-                                    <input type="text" id="user" class="form-control leave_days" readonly />
+                                    <input type="text" id="user" class="form-control leave_days" v-model = "total_leave" readonly />
                                 </div>
                             </div>
 
