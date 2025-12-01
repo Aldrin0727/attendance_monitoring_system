@@ -14,10 +14,13 @@
             <div class="invalid-feedback">Please enter your username.</div>
           </div>
 
-          <div class="mt-3">
+          <div class="mt-3 position-relative">
             <div class="input-group">
               <span class="input-group-text"><i class="fa fa-lock"></i></span>
-              <input v-model="password" type="password" class="form-control" placeholder="Password">
+              <input v-model="password" :type="showPassword ? 'text' : 'password'" class="form-control"
+                placeholder="Password">
+              <font-awesome-icon :icon="showPassword ? ['fas', 'eye-slash'] : ['fas', 'eye']" class="eye-icon"
+                @click="togglePassword" />
             </div>
           </div>
 
@@ -41,14 +44,71 @@
 </template>
 
 <script>
+import API_BASE from '@/utils/api_config';
+
+
 export default{
   data(){
-
+    return{
+      username: "",
+      password: "",
+      showPassword: false
+    }
   },
   methods:{
-    btn_login(){
-       this.$router.push("/dashboard");
-    }
+    togglePassword() {
+      this.showPassword = !this.showPassword;
+    },
+
+        btn_login() {
+      if (!this.username || !this.password) {
+        Swal.fire({
+          icon: "error",
+          title: "Login Failed",
+          text: "Please enter both username and password!"
+        });
+        return;
+      }
+
+      fetch(`${API_BASE}/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username: this.username, password: this.password })
+      })
+        .then(response => {
+          // console.log("Response:", response);
+          return response.json();
+        })
+        .then(data => {
+          if (data.first_login === 0) {
+            Swal.fire({
+              icon: "warning",
+              title: "First Login",
+              text: "You must change your password.",
+              confirmButtonText: "Change Password"
+            }).then(() => {
+              this.isChangePasswordVisible = true;
+            });
+          } else if (data.user) {
+            localStorage.setItem("user", JSON.stringify(data.user));
+            // this.$router.push("/dashboard");
+              //  console.log(data.user.department)
+            if (data.user.role === 'system_admin' || data.user.job_title === 'Department Head' || data.user.role === 'admin' || data.user.department === 'SEC') {
+              this.$router.push("/dashboard");
+            // } else if (data.user.department === 'SEC'){
+            //   this.$router.push("/forms/for_approval_forms")
+            }else {
+              this.$router.push("/tickets/my_tickets");
+            }
+          } else {
+            Swal.fire({ icon: "error", title: "Login Failed", text: data.error || "Unknown error." });
+          }
+        })
+        .catch(error => {
+          console.error("Login error:", error);
+          Swal.fire({ icon: "error", title: "Login Failed", text: "An error occurred. Please try again." });
+        });
+    },
   }
 }
 </script>
@@ -63,6 +123,15 @@ export default{
   /* font-size: 28px; */
   letter-spacing: 1px;
   margin: 0;
+}
+.eye-icon {
+  position: absolute;
+  top: 50%;
+  right: 15px;
+  transform: translateY(-50%);
+  cursor: pointer;
+  color: #2b6777;
+  font-size: 18px;
 }
 
 body {

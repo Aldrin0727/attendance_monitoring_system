@@ -3,6 +3,7 @@ import hashlib
 from plugins import mysql 
 import MySQLdb.cursors # type: ignore
 from flask_mysqldb import MySQL # type: ignore
+from config import Config
 
 users_bp = Blueprint('users', __name__)
 
@@ -17,7 +18,18 @@ def login():
         return jsonify({"error": "Username and Password is Missing."}),400
 
     cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
-    cursor.execute("SELECT * FROM users WHERE username = %s AND acc_status = 1", (username,))
+    # cursor.execute("SELECT * FROM users WHERE username = %s AND acc_status = 1", (username,))
+    query = f"""
+        SELECT *
+        FROM `{Config.MYSQL_DB2}`.`users`
+        WHERE username = %s
+          AND acc_status = 1
+    """
+
+    cursor.execute(query, (username,))
+    # cursor.execute("SELECT * FROM `ticketing_dev`.`users` WHERE username = %s AND acc_status = 1", (username,))
+    
+    
     user = cursor.fetchone()
     cursor.close()
 
@@ -34,7 +46,7 @@ def login():
             "first_name": user["first_name"]
         }), 200
 
-        session["user"] = {
+    session["user"] = {
         "id": user["id"],
         "first_name": user["first_name"],
         "last_name": user["last_name"],
