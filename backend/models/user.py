@@ -68,3 +68,23 @@ def login():
         "user": session["user"]
     }), 200
 
+@users_bp.route('/get_depthead', methods=['POST'])
+def get_depthead():  
+   try:
+        data = request.get_json()
+        department = data.get("department_name")
+
+        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor.execute("""
+            SELECT id, first_name, last_name, email, department
+            FROM `{Config.MYSQL_DB2}`.users
+            WHERE job_title = 'Department Head' AND acc_status = 1 AND department = %s
+        """, (department,))  
+
+        heads = cursor.fetchall()
+        cursor.close()
+
+        return jsonify(heads), 200
+   except Exception as e:
+        return jsonify({"error": str(e)}), 
+
