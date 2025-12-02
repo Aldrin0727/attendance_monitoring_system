@@ -196,8 +196,37 @@ export default {
 <style scoped>
 @import url(../assets/css/navbar.css);
 @import url(../assets/css/swal.css);
-@import url(../assets/css/buttons.css);
-@import url(../../public/global.css);
+@import url(../assets/css/inputbox.css);
+@import url(../assets/css/dataTable.css);
+
+
+
+
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: start;
+  z-index: 1050;
+}
+
+.modal-dialog {
+  max-width: 700px;
+  width: 100%;
+  margin: 20px;
+  position: relative;
+  top: 0;
+}
+
+label {
+  font-size: 14px;
+}
+
 
 
 .font-awesome-icon {

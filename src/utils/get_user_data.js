@@ -18,10 +18,13 @@ export const getUserData = () => {
             username: parsedUser.username || '',
             email: parsedUser.email || '',
             department_name: parsedUser.department_name || '',
-            
             dept_code: parsedUser.dept_code || '',
             role: parsedUser.role || '', 
             job_title: parsedUser.job_title || '', 
+            position: parsedUser.position || '', 
+            contact: parsedUser.contact || '', 
+            address: parsedUser.address || '', 
+            emp_id: parsedUser.emp_id || '', 
         };
     } catch (error) {
         console.error("Error parsing user data:", error);

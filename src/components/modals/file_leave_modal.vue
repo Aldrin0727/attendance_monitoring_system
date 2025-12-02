@@ -97,7 +97,7 @@
                                 </div>
                             </div>
 
-                            <div class="row mb-3">
+                            <div class="row mb-1">
                                 <div class="col-12">
                                     <label for="leave_reason" class="form-label label-sm">
                                         Reason for leave <strong style="color: red">*</strong>
@@ -275,7 +275,6 @@ export default {
             })
                 .then(response => response.json())
                 .then(data => {
-                    // console.log(data)
                     if (data.success) {
                          Swal.fire("Success", "Leave filed successfully", "success");
                         
@@ -298,10 +297,11 @@ export default {
 
 
 
-<style scoped>
+<style>
 @import url(../../assets/css/modal.css);
 @import url(../../assets/css/buttons.css);
 @import url(../../assets/css/swal.css);
+@import url(../../../public/global.css);
 
 .font-awesome-icon {
     color: #df7a8a !important;

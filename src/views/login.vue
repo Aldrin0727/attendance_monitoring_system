@@ -97,7 +97,8 @@ export default{
 
 <style scoped>
 @import url(../assets/css/buttons.css);
-
+@import url(../assets/css/swal.css);
+@import url(../../public/global.css);
 
 .title {
   font-weight: 800;
