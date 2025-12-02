@@ -112,7 +112,7 @@
 
 <script>
 import API_BASE from '@/utils/api_config';
-import { getUserData, fetchDepartmentName } from '@/utils/get_user_data';
+import { getUserData } from '@/utils/get_user_data';
 
 export default {
     props: {

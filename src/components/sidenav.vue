@@ -13,13 +13,12 @@
                             </div>
                         </div>
 
-                        <!-- Name + Dept (itatago pag collapsed yung sidebar) -->
                         <div class="user-text" v-show="!isSidebarActive">
                             <div class="user-name">
                                 {{ user.fullName }}
                             </div>
                             <div class="user-dept">
-                                {{ user.department }}
+                                {{ user.dept_code }}
                             </div>
                         </div>
                     </div>
@@ -85,6 +84,7 @@
 </template>
 
 <script>
+import { getUserData } from '@/utils/get_user_data';
 export default {
     name: "Sidenav",
     props: {
@@ -99,7 +99,7 @@ export default {
                 assignments: false,
                 parameters: false,
             },
-            user: null, 
+            user: getUserData() || {},
         };
     },
     computed: {
@@ -129,8 +129,7 @@ export default {
             const u = JSON.parse(stored);
             this.user = {
                 fullName: `${u.first_name} ${u.last_name}`,
-                department: u.department,
-                avatar: u.avatar || null, // kung may profile pic ka
+                dept_code: u.dept_code,
             };
         }
     },
