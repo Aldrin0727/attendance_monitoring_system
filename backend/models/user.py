@@ -20,11 +20,17 @@ def login():
     cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
     # cursor.execute("SELECT * FROM users WHERE username = %s AND acc_status = 1", (username,))
     query = f"""
-        SELECT *
-        FROM `{Config.MYSQL_DB2}`.`users`
-        WHERE username = %s
-          AND acc_status = 1
+        SELECT 
+            u.*,
+            u.department AS dept_code,
+            d.department AS department_name   
+        FROM `{Config.MYSQL_DB2}`.`users` AS u
+        LEFT JOIN `{Config.MYSQL_DB2}`.`departments` AS d
+            ON u.department = d.dept_code
+        WHERE u.username = %s
+        AND u.acc_status = 1
     """
+
 
     cursor.execute(query, (username,))
     # cursor.execute("SELECT * FROM `ticketing_dev`.`users` WHERE username = %s AND acc_status = 1", (username,))
@@ -52,7 +58,8 @@ def login():
         "last_name": user["last_name"],
         "username": user["username"],
         "email": user["email"],
-        "department": user["department"],
+        "department_name": user["department_name"],
+        "dept_code": user["dept_code"],
         "first_login": user["first_login"],
         "role": user["role"],
         "job_title": user["job_title"],
@@ -62,3 +69,4 @@ def login():
         "message": "Login successful",
         "user": session["user"]
     }), 200
+
