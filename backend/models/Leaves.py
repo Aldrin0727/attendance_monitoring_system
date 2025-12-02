@@ -21,15 +21,15 @@ def add_leave_details():
     try: 
         data = request.get_json()
 
-        username = data.get("username")
+        username = data.get("fullName")
         position = data.get("position")
-        department = data.get("department")
+        department = data.get("department_name")
         address = data.get("address")
         contact = data.get("contact")
         leave_type = data.get("selectedTypeofLeave")
-        total_leave = data.get("total_leave")
-        leave_from = data.get("leaveForm.date_from")
-        leave_to = data.get("leaveForm.date_to")
+        total_leave = data.get("total_leave_days")
+        leave_from = data.get("date_from")
+        leave_to = data.get("date_to")
         leave_reason = data.get("leave_reason")
 
         # database insert
