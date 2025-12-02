@@ -301,10 +301,6 @@ export default {
 @import url(../../assets/css/modal.css);
 @import url(../../assets/css/buttons.css);
 @import url(../../assets/css/swal.css);
-<<<<<<< HEAD
-@import url(../../../public/global.css);
-=======
->>>>>>> 01f8ed9e1fb6c8e821703e0f76541f1bdf9743e3
 
 .font-awesome-icon {
     color: #df7a8a !important;

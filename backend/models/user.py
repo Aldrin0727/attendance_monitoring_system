@@ -68,10 +68,6 @@ def login():
         "user": session["user"]
     }), 200
 
-<<<<<<< HEAD
-
-=======
->>>>>>> 01f8ed9e1fb6c8e821703e0f76541f1bdf9743e3
 @users_bp.route('/get_depthead', methods=['POST'])
 def get_depthead():  
    try:
@@ -81,11 +77,7 @@ def get_depthead():
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
         cursor.execute("""
             SELECT id, first_name, last_name, email, department
-<<<<<<< HEAD
-            FROM users
-=======
             FROM `{Config.MYSQL_DB2}`.users
->>>>>>> 01f8ed9e1fb6c8e821703e0f76541f1bdf9743e3
             WHERE job_title = 'Department Head' AND acc_status = 1 AND department = %s
         """, (department,))  
 
