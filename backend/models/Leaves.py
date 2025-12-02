@@ -66,20 +66,28 @@ def get_count_approval():
         cursor.close()
 
         return jsonify({
+<<<<<<< HEAD
             "app_count": app_count, 
             "success": True, 
             "used_sl" : used_sl, 
             "used_vl":used_vl
+=======
+            "app_count": app_count, "success": True, "fullName": username, "used_sl" : used_sl, "used_vl":used_vl
+>>>>>>> 01f8ed9e1fb6c8e821703e0f76541f1bdf9743e3
             }), 201
     except Exception as e:
         return jsonify({"error": str(e)}),500
     
+<<<<<<< HEAD
 
+=======
+>>>>>>> 01f8ed9e1fb6c8e821703e0f76541f1bdf9743e3
 @leave_bp.route('/leave_list', methods=['POST'])
 def get_leave_list():
     try:   
         data = request.get_json()
         username = data.get("fullName")
+<<<<<<< HEAD
         
 
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
@@ -101,6 +109,32 @@ def get_leave_list():
         cursor.close()
         return jsonify({"data":forapp_list, "success": True}), 201
     
+=======
+
+        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor.execute("""
+            SELECT 
+             * 
+            FROM Leave_Details 
+            WHERE user = %s 
+            AND status = 'FOR DEPARTMENT HEAD APPROVAL'
+        """, (username,))
+        forapp_list =  cursor.fetchall()
+        
+
+        cursor.execute(""" 
+            SELECT * 
+            from Leave_Details 
+            where user = %s 
+            and status = 'APPROVED'
+             """, (username,))
+        app_list = cursor.fetchall()
+
+        cursor.close()
+        return jsonify({"forapp_list":forapp_list,"app_list":app_list, "success": True}), 201
+    
+    #    return jsonify({"forapp_list":forapp_list,"app_list":app_list,"success":True}), 200
+>>>>>>> 01f8ed9e1fb6c8e821703e0f76541f1bdf9743e3
     except Exception as e:
         return jsonify({"error": str(e)}),500
     

@@ -220,7 +220,6 @@ export default {
     },
 
     file_leave_btn() {
-      // alert('open modal')
       this.is_file_leave_modal_visible = true;
     },
 
