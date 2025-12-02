@@ -31,10 +31,8 @@ def login():
         AND u.acc_status = 1
     """
 
-
     cursor.execute(query, (username,))
     # cursor.execute("SELECT * FROM `ticketing_dev`.`users` WHERE username = %s AND acc_status = 1", (username,))
-    
     
     user = cursor.fetchone()
     cursor.close()

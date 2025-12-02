@@ -29,7 +29,7 @@
                                 </div>
                                 <div class="col-6">
                                     <label for="user" class="form-label label-sm">department</label>
-                                    <input type="text" id="department" class="form-control" :value="user.department_name" readonly />
+                                    <input type="text" id="department" class="form-control" v-model="user.department_name" readonly />
                                 </div>
                             </div>
                             <div class="row mb-1">
