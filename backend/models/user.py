@@ -12,7 +12,7 @@ def login():
 
     data = request.json
     username = data.get('username')
-    password =data.get('password')
+    password = data.get('password')
 
     if not username and not password:
         return jsonify({"error": "Username and Password is Missing."}),400

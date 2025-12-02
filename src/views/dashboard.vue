@@ -128,9 +128,9 @@ export default {
         themeSystem: 'bootstrap5',
         dateClick: this.handleDateClick,
         events: [
-          // { title: 'Event 1', date: '2025-11-10', color: '#ff7f50' },
-          // { title: 'Event 2', date: '2025-11-12', color: '#7f8c8d' },
-          // { title: 'Event 3', date: '2025-11-14', color: '#3498db' }
+          { title: 'Event 1', date: '2025-11-10', color: '#ff7f50' },
+          { title: 'Event 2', date: '2025-11-12', color: '#7f8c8d' },
+          { title: 'Event 3', date: '2025-11-14', color: '#3498db' }
         ],
         headerToolbar: {
           left: 'prev,next today',
@@ -152,8 +152,9 @@ export default {
     },
 
     handleDateClick() {
-      alert('You clicked on: ' + arg.dateStr)
+      alert('You clicked on: ')
     },
+
     customEventRendering(info) {
       const event = info.event;
       event.setProp('backgroundColor', event.extendedProps.color);

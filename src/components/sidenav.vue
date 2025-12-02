@@ -53,6 +53,13 @@
                         </a>
                     </li>
 
+                    <li :class="{ active: isActive('leave_requests') }">
+                        <a @click.prevent="navigate('leave_requests')">
+                            <i class="fas fa-computer"></i>
+                            <span v-show="!isSidebarActive">Leave Requests</span>
+                        </a>
+                    </li>
+
                     <li :class="{ active: isActive('ob_ot') }">
                         <a @click.prevent="navigate('ob_ot')">
                             <i class="fas fa-window-restore"></i>
@@ -103,7 +110,7 @@ export default {
         };
     },
     computed: {
-  userInitials() {
+        userInitials() {
             const u = this.user || {};
             let fullName = "";
 
@@ -253,11 +260,10 @@ export default {
     margin-top: 2px;
 }
 
-.btn-secondary{
-      background-color: #4a8fe7;
-   border-radius: 9999px;
-   font-weight: 700;
-   letter-spacing: .06em;
+.btn-secondary {
+    background-color: #4a8fe7;
+    border-radius: 9999px;
+    font-weight: 700;
+    letter-spacing: .06em;
 }
-
 </style>

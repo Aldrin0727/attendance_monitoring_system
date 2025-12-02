@@ -9,7 +9,7 @@ export const getUserData = () => {
 
     try {
         const parsedUser = JSON.parse(storedUser);
-        console.log("Parsed User Data:", parsedUser);
+        // console.log("Parsed User Data:", parsedUser);
 
         return {
             id: parsedUser.id || '',
@@ -18,7 +18,8 @@ export const getUserData = () => {
             username: parsedUser.username || '',
             email: parsedUser.email || '',
             department_name: parsedUser.department_name || '',
-            dept_code: parsedUser.department || '',
+            
+            dept_code: parsedUser.dept_code || '',
             role: parsedUser.role || '', 
             job_title: parsedUser.job_title || '', 
         };

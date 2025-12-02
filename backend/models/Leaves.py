@@ -20,28 +20,31 @@ def get_leave_details():
 def add_leave_details():
     try: 
         data = request.get_json()
-
         username = data.get("fullName")
-        position = data.get("position")
         department = data.get("department_name")
-        address = data.get("address")
-        contact = data.get("contact")
         leave_type = data.get("selectedTypeofLeave")
-        total_leave = data.get("total_leave_days")
+        total_leave = data.get("total_leave_days") 
         leave_from = data.get("date_from")
         leave_to = data.get("date_to")
         leave_reason = data.get("leave_reason")
+        status = 'FOR APPROVAL'
+        approver = 'test'
 
         # database insert
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
-        cursor.execute(
-            "INSERT INTO Leave_Details (user,leave_type,leave_number,leave_from,leave_to,leave_reason,date_created,position,department,address,contact_no)" \
-            "VALUES (%s, %s, %s, %s, %s, %s, %s, NOW(), %s, %s, %s)",(username,leave_type,total_leave,leave_from,leave_to,leave_reason,position,department,address,contact)
-        )
+        cursor.execute("""
+            INSERT INTO Leave_Details (
+                user, leave_type, leave_number, leave_from, leave_to, leave_reason, date_created, department, status, approver
+            ) VALUES (%s, %s, %s, %s, %s, %s, NOW(), %s, %s ,%s)
+        """, (
+            username, leave_type, total_leave, leave_from, leave_to, leave_reason, department, status, approver
+        ))
+
+        
         mysql.connection.commit()
         cursor.close()
         
-        return jsonify({"message": "Submitted Leave is now For Approval."}), 201
+        return jsonify({"message": "Submitted Leave is now For Approval.", "success": True}), 201
     except Exception as e:
         return jsonify({"error": str(e)}),500
 

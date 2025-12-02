@@ -19,34 +19,36 @@
                             <div class="row">
                                 <div class="col-12 mb-3">
                                     <label for="user" class="form-label label-sm">USER</label>
-                                    <input type="text" id="user" class="form-control"  v-model="fullName" readonly />
+                                    <input type="text" id="user" class="form-control" v-model="fullName" readonly />
                                 </div>
                             </div>
                             <div class="row mb-3">
                                 <div class="col-6">
                                     <label for="user" class="form-label label-sm">Position</label>
-                                    <input type="text" id="user" class="form-control" v-model="user.position" readonly />
+                                    <input type="text" id="user" class="form-control" v-model="user.position"
+                                        readonly />
                                 </div>
                                 <div class="col-6">
                                     <label for="user" class="form-label label-sm">department</label>
-                                    <input type="text" id="department" class="form-control" v-model="user.department_name" readonly />
+                                    <input type="text" id="department" class="form-control"
+                                        v-model="user.department_name" readonly />
                                 </div>
                             </div>
                             <div class="row mb-1">
                                 <div class="col-6">
                                     <label for="user" class="form-label label-sm">Address</label>
-                                    <input type="text" id="user" class="form-control" v-model="address" readonly />
+                                    <input type="text" id="user" class="form-control" v-model="user.address" readonly />
                                 </div>
                                 <div class="col-6">
                                     <label for="user" class="form-label label-sm">Contact Number</label>
-                                    <input type="text" id="user" class="form-control" v-model="contact" readonly />
+                                    <input type="text" id="user" class="form-control" v-model="user.contact" readonly />
                                 </div>
                             </div>
                         </div>
 
                         <!-- Leave Credits -->
                         <div class="section">
-                            <div class="section-title">Leave Credits</div>
+                            <div class="section-title">Leave Request</div>
                             <hr class="mt-0">
 
                             <div class="row">
@@ -61,11 +63,21 @@
                                         <option value="EL">Emergency Leave</option>
                                     </select>
                                 </div>
-                                <div class="col-6">
-                                    <label class="form-label label-sm">Total Leave Days</label>
+                                <div class="col-4">
+                                    <label class="form-label label-sm">Half Day? <strong style="color: red">*</strong></label>
+                                    <select v-model="leaveForm.half_day" class="form-select">
+                                        <option value="">No</option>
+                                        <option value="morning">Yes - Morning</option>
+                                        <option value="afternoon">Yes - Afternoon</option>
+                                    </select>
+                                </div>
+
+                                <div class="col-2">
+                                    <label class="form-label label-sm">Total Days</label>
                                     <input type="text" class="form-control leave_days"
                                         :value="leaveForm.total_leave_days" readonly />
                                 </div>
+
                             </div>
 
                             <div class="row mb-3">
@@ -73,14 +85,14 @@
                                     <label for="date_from" class="form-label label-sm">
                                         Date of Leave From <strong style="color: red">*</strong>
                                     </label>
-                                    <input type="datetime-local" id="date_from" class="form-control"
+                                    <input type="date" id="date_from" class="form-control"
                                         v-model="leaveForm.date_from" required />
                                 </div>
                                 <div class="col-6">
                                     <label for="date_to" class="form-label label-sm">
                                         Date of Leave To <strong style="color: red">*</strong>
                                     </label>
-                                    <input type="datetime-local" id="date_to" class="form-control"
+                                    <input type="date" id="date_to" class="form-control"
                                         v-model="leaveForm.date_to" required />
                                 </div>
                             </div>
@@ -90,8 +102,8 @@
                                     <label for="leave_reason" class="form-label label-sm">
                                         Reason for leave <strong style="color: red">*</strong>
                                     </label>
-                                    <textarea class="form-control" rows="2" id="leave_reason" v-model="leave_reason"
-                                        required></textarea>
+                                    <textarea class="form-control" rows="2" id="leave_reason"
+                                        v-model="leaveForm.leave_reason" required></textarea>
                                 </div>
                             </div>
                         </div>
@@ -128,40 +140,153 @@ export default {
             leaveForm: {
                 date_from: "",
                 date_to: "",
-                total_leave_days: "", // optional, for future compute
+                total_leave_days: "",
+                leave_reason: "",
+                half_day: "",
             },
             leave_reason: "",
         };
     },
-    computed:{
+    computed: {
         fullName() {
             return `${this.user.first_name} ${this.user.last_name}`.trim();
         },
     },
-    mounted(){
-      
+    mounted() {
+
     },
+
+    watch: {
+        'leaveForm.date_from': 'calculateTotalLeaveDays',
+        'leaveForm.date_to': 'calculateTotalLeaveDays',
+        'leaveForm.half_day': 'calculateTotalLeaveDays',
+    },
+
     methods: {
+        // formatDateTime(value) {
+        //     if (!value) return null;
+
+        //     const iso = String(value);
+
+        //     const parts = iso.split('T');
+        //     const date = parts[0] || null;
+        //     const timePart = parts[1] || '';
+
+        //     if (!date) return null;
+
+        //     const timePieces = timePart.split(':'); 
+        //     const hh = timePieces[0] || '00';
+        //     const mm = timePieces[1] || '00';
+
+        //     return `${date} ${hh}:${mm}:00`;
+        // },
+
         closeModal() {
             // reset fields
             this.selectedTypeofLeave = "";
             this.leaveForm.date_from = "";
             this.leaveForm.date_to = "";
             this.leaveForm.total_leave_days = "";
-            this.leave_reason = "";
+            this.leaveForm.leave_reason = "";
 
-            // notify parent to hide modal
             this.$emit("close");
         },
 
+        calculateTotalLeaveDays() {
+            const from = this.leaveForm.date_from;
+            const to = this.leaveForm.date_to;
+            const halfDay = this.leaveForm.half_day;
+
+            if (!from || !to) {
+                this.leaveForm.total_leave_days = '';
+                return;
+            }
+
+            const start = new Date(from);
+            const end = new Date(to);
+
+            if (isNaN(start) || isNaN(end) || end < start) {
+                this.leaveForm.total_leave_days = '';
+                return;
+            }
+
+            const msPerDay = 1000 * 60 * 60 * 24;
+            const startDate = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+            const endDate = new Date(end.getFullYear(), end.getMonth(), end.getDate());
+
+            let diffDays = Math.floor((endDate - startDate) / msPerDay) + 1;
+
+            // apply half-day rule
+            if (halfDay) {
+                // if both dates are the same
+                if (diffDays === 1) {
+                    diffDays = 0.5;
+                } else {
+                    diffDays = diffDays - 0.5;
+                }
+            }
+
+            this.leaveForm.total_leave_days = diffDays;
+        },
+
+
         submitForm() {
-            // dito mo ilalagay yung submit logic later
-            // for now pwedeng simple:
-            console.log({
-                type: this.selectedTypeofLeave,
-                ...this.leaveForm,
-                reason: this.leave_reason,
-            });
+            // console.log({
+            //     type_of_leave: this.selectedTypeofLeave,
+            //     ...this.leaveForm,
+            //     ...this.user,
+            // });
+
+            if (this.selectedTypeofLeave === 'VL') {
+                const start = new Date(this.leaveForm.date_from); 
+                const now = new Date();
+
+                const startDay = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+                const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+                if (startDay.getTime() === today.getTime()) {
+                    Swal.fire(
+                        "Not allowed",
+                        "Vacation Leave (VL) cannot be filed for today. Please choose a future date.",
+                        "warning"
+                    );
+                    return; 
+                }
+            }
+
+            const formData = {
+                selectedTypeofLeave: this.selectedTypeofLeave,
+                fullName: this.fullName,
+                total_leave_days: this.leaveForm.total_leave_days,
+                date_from: this.leaveForm.date_from,
+                date_to: this.leaveForm.date_to,
+                leave_reason: this.leaveForm.leave_reason,
+                department_name: this.user.dept_code
+            };
+
+            console.log(formData)
+
+            fetch(`${API_BASE}/create_leave`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify(formData),
+            })
+                .then(response => response.json())
+                .then(data => {
+                    // console.log(data)
+                    if (data.success) {
+                         Swal.fire("Success", "Leave filed successfully", "success");
+                        
+                    } else {
+                        Swal.fire("Error", data.error || "Failed to submit leave", "error");
+                    }
+                })
+                .catch(error => {
+                    console.error("Error submitting form:", error);
+                    Swal.fire("Error", "Something went wrong", "error");
+                });
 
             // after successful submit, close modal
             this.closeModal();
@@ -176,6 +301,7 @@ export default {
 <style scoped>
 @import url(../../assets/css/modal.css);
 @import url(../../assets/css/buttons.css);
+@import url(../../assets/css/swal.css);
 
 .font-awesome-icon {
     color: #df7a8a !important;
