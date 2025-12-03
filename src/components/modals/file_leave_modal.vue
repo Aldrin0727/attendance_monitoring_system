@@ -64,12 +64,8 @@
                                     </select>
                                 </div>
                                 <div class="col-4">
-<<<<<<< HEAD
-                                    <label class="form-label label-sm">Half Day? <strong style="color: red">*</strong></label>
-=======
                                     <label class="form-label label-sm">Half Day? <strong
                                             style="color: red">*</strong></label>
->>>>>>> origin/lj_branch
                                     <select v-model="leaveForm.half_day" class="form-select">
                                         <option value="">No</option>
                                         <option value="morning">Yes - Morning</option>
@@ -90,25 +86,15 @@
                                     <label for="date_from" class="form-label label-sm">
                                         Date of Leave From <strong style="color: red">*</strong>
                                     </label>
-<<<<<<< HEAD
-                                    <input type="date" id="date_from" class="form-control"
-                                        v-model="leaveForm.date_from" required />
-=======
                                     <input type="date" id="date_from" class="form-control" v-model="leaveForm.date_from"
                                         required />
->>>>>>> origin/lj_branch
                                 </div>
                                 <div class="col-6">
                                     <label for="date_to" class="form-label label-sm">
                                         Date of Leave To <strong style="color: red">*</strong>
                                     </label>
-<<<<<<< HEAD
-                                    <input type="date" id="date_to" class="form-control"
-                                        v-model="leaveForm.date_to" required />
-=======
                                     <input type="date" id="date_to" class="form-control" v-model="leaveForm.date_to"
                                         required />
->>>>>>> origin/lj_branch
                                 </div>
                             </div>
 
@@ -117,11 +103,7 @@
                                     <label for="leave_reason" class="form-label label-sm">
                                         Reason for leave <strong style="color: red">*</strong>
                                     </label>
-<<<<<<< HEAD
-                                    <textarea class="form-control" rows="2" id="leave_reason"
-=======
                                     <textarea class="form-control" rows="1" id="leave_reason"
->>>>>>> origin/lj_branch
                                         v-model="leaveForm.leave_reason" required></textarea>
                                 </div>
                             </div>
@@ -178,11 +160,8 @@ export default {
                 total_leave_days: "",
                 leave_reason: "",
                 half_day: "",
-<<<<<<< HEAD
-=======
                 approver: "", 
                 status: "",
->>>>>>> origin/lj_branch
             },
             leave_reason: "",
         };
@@ -193,11 +172,7 @@ export default {
         },
     },
     mounted() {
-<<<<<<< HEAD
-
-=======
         // this.fetchDepartmentHead();
->>>>>>> origin/lj_branch
     },
 
     watch: {
@@ -225,13 +200,10 @@ export default {
         //     return `${date} ${hh}:${mm}:00`;
         // },
 
-<<<<<<< HEAD
-=======
        
 
 
 
->>>>>>> origin/lj_branch
         closeModal() {
             // reset fields
             this.selectedTypeofLeave = "";
@@ -239,11 +211,8 @@ export default {
             this.leaveForm.date_to = "";
             this.leaveForm.total_leave_days = "";
             this.leaveForm.leave_reason = "";
-<<<<<<< HEAD
-=======
             this.leaveForm.approver = ""; 
             this.leaveForm.status = ""; 
->>>>>>> origin/lj_branch
 
             this.$emit("close");
         },
@@ -294,11 +263,7 @@ export default {
             // });
 
             if (this.selectedTypeofLeave === 'VL') {
-<<<<<<< HEAD
-                const start = new Date(this.leaveForm.date_from); 
-=======
                 const start = new Date(this.leaveForm.date_from);
->>>>>>> origin/lj_branch
                 const now = new Date();
 
                 const startDay = new Date(start.getFullYear(), start.getMonth(), start.getDate());
@@ -310,11 +275,7 @@ export default {
                         "Vacation Leave (VL) cannot be filed for today. Please choose a future date.",
                         "warning"
                     );
-<<<<<<< HEAD
-                    return; 
-=======
                     return;
->>>>>>> origin/lj_branch
                 }
             }
 
@@ -328,11 +289,7 @@ export default {
                 department_name: this.user.dept_code
             };
 
-<<<<<<< HEAD
-            console.log(formData)
-=======
             // console.log(formData)
->>>>>>> origin/lj_branch
 
             fetch(`${API_BASE}/create_leave`, {
                 method: "POST",
@@ -344,13 +301,8 @@ export default {
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-<<<<<<< HEAD
-                         Swal.fire("Success", "Leave filed successfully", "success");
-                        
-=======
                         Swal.fire("Success", "Leave filed successfully", "success");
 
->>>>>>> origin/lj_branch
                     } else {
                         Swal.fire("Error", data.error || "Failed to submit leave", "error");
                     }
@@ -359,10 +311,6 @@ export default {
                     console.error("Error submitting form:", error);
                     Swal.fire("Error", "Something went wrong", "error");
                 });
-<<<<<<< HEAD
-=======
-
->>>>>>> origin/lj_branch
 
             // after successful submit, close modal
             this.closeModal();
@@ -407,10 +355,7 @@ export default {
 @import url(../../assets/css/modal.css);
 @import url(../../assets/css/buttons.css);
 @import url(../../assets/css/swal.css);
-<<<<<<< HEAD
-=======
 @import url(../../../public/global.css);
->>>>>>> origin/lj_branch
 
 .font-awesome-icon {
     color: #df7a8a !important;
