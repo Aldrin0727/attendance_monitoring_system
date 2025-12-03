@@ -408,9 +408,12 @@ export default {
 @import url(../../assets/css/buttons.css);
 @import url(../../assets/css/swal.css);
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 @import url(../../../public/global.css);
 >>>>>>> origin/lj_branch
+=======
+>>>>>>> d442d2c3b064e9b3f1318ac7f55b2acca7468f5a
 
 .font-awesome-icon {
     color: #df7a8a !important;
