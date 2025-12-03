@@ -11,5 +11,6 @@ export const jobTitleColors = {
 };
 
 export const statusColors = {
-  "FOR DEPARTMENT HEAD APPROVAL": "badge custom-green text-dark custom-badge fw-normal",
+  "FOR DEPARTMENT HEAD APPROVAL": "badge custom-blue text-white custom-badge fw-normal",
+  "APPROVED": "badge custom-green-2 text-white custom-badge fw-normal",
 };

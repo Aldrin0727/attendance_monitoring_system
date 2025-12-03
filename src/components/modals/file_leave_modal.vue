@@ -64,7 +64,8 @@
                                     </select>
                                 </div>
                                 <div class="col-4">
-                                    <label class="form-label label-sm">Half Day? <strong style="color: red">*</strong></label>
+                                    <label class="form-label label-sm">Half Day? <strong
+                                            style="color: red">*</strong></label>
                                     <select v-model="leaveForm.half_day" class="form-select">
                                         <option value="">No</option>
                                         <option value="morning">Yes - Morning</option>
@@ -85,15 +86,15 @@
                                     <label for="date_from" class="form-label label-sm">
                                         Date of Leave From <strong style="color: red">*</strong>
                                     </label>
-                                    <input type="date" id="date_from" class="form-control"
-                                        v-model="leaveForm.date_from" required />
+                                    <input type="date" id="date_from" class="form-control" v-model="leaveForm.date_from"
+                                        required />
                                 </div>
                                 <div class="col-6">
                                     <label for="date_to" class="form-label label-sm">
                                         Date of Leave To <strong style="color: red">*</strong>
                                     </label>
-                                    <input type="date" id="date_to" class="form-control"
-                                        v-model="leaveForm.date_to" required />
+                                    <input type="date" id="date_to" class="form-control" v-model="leaveForm.date_to"
+                                        required />
                                 </div>
                             </div>
 
@@ -102,11 +103,27 @@
                                     <label for="leave_reason" class="form-label label-sm">
                                         Reason for leave <strong style="color: red">*</strong>
                                     </label>
-                                    <textarea class="form-control" rows="2" id="leave_reason"
+                                    <textarea class="form-control" rows="1" id="leave_reason"
                                         v-model="leaveForm.leave_reason" required></textarea>
                                 </div>
                             </div>
                         </div>
+
+                         <!-- approver
+                        <div class="section">
+                            <div class="section-title">APPROVER AND STATUS OF LEAVE</div>
+                            <hr class="mt-0">
+                            <div class="row">
+                                <div class="col-6">
+                                    <label for="approver" class="form-label label-sm">Approver</label>
+                                    <input type="text" id="approver" class="form-control" v-model="leaveForm.approver" readonly />
+                                </div>
+                                <div class="col-6">
+                                    <label for="leave_status" class="form-label label-sm">Leave Status</label>
+                                    <input type="text" id="leave_status" class="form-control" v-model="leaveForm.status" readonly />
+                                </div>
+                            </div>
+                        </div> -->
                     </div>
 
                     <!-- Modal Footer -->
@@ -143,6 +160,8 @@ export default {
                 total_leave_days: "",
                 leave_reason: "",
                 half_day: "",
+                approver: "", 
+                status: "",
             },
             leave_reason: "",
         };
@@ -153,7 +172,7 @@ export default {
         },
     },
     mounted() {
-
+        // this.fetchDepartmentHead();
     },
 
     watch: {
@@ -181,6 +200,10 @@ export default {
         //     return `${date} ${hh}:${mm}:00`;
         // },
 
+       
+
+
+
         closeModal() {
             // reset fields
             this.selectedTypeofLeave = "";
@@ -188,6 +211,8 @@ export default {
             this.leaveForm.date_to = "";
             this.leaveForm.total_leave_days = "";
             this.leaveForm.leave_reason = "";
+            this.leaveForm.approver = ""; 
+            this.leaveForm.status = ""; 
 
             this.$emit("close");
         },
@@ -238,7 +263,7 @@ export default {
             // });
 
             if (this.selectedTypeofLeave === 'VL') {
-                const start = new Date(this.leaveForm.date_from); 
+                const start = new Date(this.leaveForm.date_from);
                 const now = new Date();
 
                 const startDay = new Date(start.getFullYear(), start.getMonth(), start.getDate());
@@ -250,7 +275,7 @@ export default {
                         "Vacation Leave (VL) cannot be filed for today. Please choose a future date.",
                         "warning"
                     );
-                    return; 
+                    return;
                 }
             }
 
@@ -264,7 +289,7 @@ export default {
                 department_name: this.user.dept_code
             };
 
-            console.log(formData)
+            // console.log(formData)
 
             fetch(`${API_BASE}/create_leave`, {
                 method: "POST",
@@ -276,8 +301,8 @@ export default {
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                         Swal.fire("Success", "Leave filed successfully", "success");
-                        
+                        Swal.fire("Success", "Leave filed successfully", "success");
+
                     } else {
                         Swal.fire("Error", data.error || "Failed to submit leave", "error");
                     }
@@ -287,17 +312,47 @@ export default {
                     Swal.fire("Error", "Something went wrong", "error");
                 });
 
+
             // after successful submit, close modal
             this.closeModal();
         },
     },
+//      fetchDepartmentHead() {
+//             console.log(this.user.dept_code)
+//             fetch(`${API_BASE}/get_depthead`, {
+//                 method: "POST",
+//                 headers: {
+//                     "Content-Type": "application/json",
+//                 },
+//                 body: JSON.stringify({ department: this.user.dept_code }),
+//             })
+//                 .then(response => response.json())
+//                 .then(data => {
+//                     console.log(data)
+//                     if (data.success) {
+
+//                         if (data.all_list && data.all_list.length > 0) {
+
+//                             this.leaveForm.approver = data.all_list[1].fullName;
+//                         } else {
+//                             console.error('No department head found for the given department');
+//                         }
+//                     } else {
+//                         console.error('Error fetching department head');
+//                     }
+//                 })
+//                 .catch(error => {
+//                     console.error('Error fetching department head:', error);
+//                 });
+// },
+
 };
 </script>
 
 
 
 
-<style>
+<style scoped>
 @import url(../../assets/css/modal.css);
 @import url(../../assets/css/buttons.css);
 @import url(../../assets/css/swal.css);

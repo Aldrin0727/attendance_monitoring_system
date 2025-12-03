@@ -68,24 +68,51 @@ def login():
         "user": session["user"]
     }), 200
 
-
 @users_bp.route('/get_depthead', methods=['POST'])
 def get_depthead():  
    try:
         data = request.get_json()
-        department = data.get("department_name")
+        department = data.get("department")
 
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
-        cursor.execute("""
-            SELECT id, first_name, last_name, email, department
-            FROM users
-            WHERE job_title = 'Department Head' AND acc_status = 1 AND department = %s
-        """, (department,))  
+        sql = f"""
+            SELECT CONCAT(first_name,' ', last_name) as fullName
+            FROM `{Config.MYSQL_DB2}`.users
+            WHERE job_title = 'Department Head'
+            AND acc_status = 1
+            AND department = %s
+        """
 
+        cursor.execute(sql, (department,))
         heads = cursor.fetchall()
+
         cursor.close()
 
-        return jsonify(heads), 200
+        return jsonify({"all_list":heads, "success": True}), 201
    except Exception as e:
-        return jsonify({"error": str(e)}), 
+        return jsonify({"error": str(e)}), 500
+   
+@users_bp.route('/get_user_info', methods=['POST'])
+def get_user_info():  
+   try:
+        data = request.get_json()
+        username = data.get("fullName")
+
+        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        sql = f"""
+            SELECT *
+            FROM `{Config.MYSQL_DB2}`.users
+            WHERE CONCAT(first_name,' ',last_name) = %s
+            AND acc_status = 1
+
+        """
+
+        cursor.execute(sql, (username,))
+        heads = cursor.fetchall()
+
+        cursor.close()
+
+        return jsonify({"all_list":heads, "success": True}), 201
+   except Exception as e:
+        return jsonify({"error": str(e)}), 500
 

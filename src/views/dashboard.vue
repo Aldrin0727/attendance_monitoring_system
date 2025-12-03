@@ -101,14 +101,13 @@
       <!-- Custom Card for Security Check -->
       <div class="custom-card p-3 mb-4 mt-3">
         <h5 class="card-title d-flex justify-content-between align-items-center">
-          PENDING FOR APPROVAL
+          PENDING
         </h5>
 
 
         <div class="card h-100 mt-2">
-
           <div class="card-body has-fav-padding d-flex justify-content-between align-items-center">
-            <font-awesome-icon :icon="['fas', 'hourglass-half']" class="font-awesome-icon" style="color:#0dcaf0" />
+            <font-awesome-icon :icon="['fas', 'hourglass-half']" class="font-awesome-icon" style="color:#edc55b" />
             <div class="text-end">
               <h3 class="fw-bold mb-0">{{ for_dept_head_approval_pending ?? 0 }}</h3>
               <span class="text-muted">Pending for Department Head Approval</span>
@@ -116,7 +115,24 @@
           </div>
           <div class="card-footer py-1 px-2">
             <a href="#" class="text-white d-flex justify-content-between align-items-center m-0"
-              style="text-decoration:none;" @click.prevent="goToLeaveRequests('FOR DEPARTMENT HEAD APPROVAL')">
+              style="text-decoration:none;" @click.prevent="goToLeaveRequests('FOR DEPARTMENT HEAD APPROVAL', '')">
+              <span>View Details</span>
+              <i class="fas fa-arrow-right"></i>
+            </a>
+          </div>
+        </div>
+
+        <div class="card h-100 mt-3" v-if="user.job_title == 'Department Head'">
+          <div class="card-body has-fav-padding d-flex justify-content-between align-items-center">
+            <font-awesome-icon :icon="['fas', 'user-check']" class="font-awesome-icon" style="color:#0dcaf0" />
+            <div class="text-end">
+              <h3 class="fw-bold mb-0">{{ for_dept_head?? 0 }}</h3>
+              <span class="text-muted">Pending for Your Approval (Only for DH)</span>
+            </div>
+          </div>
+          <div class="card-footer py-1 px-2">
+            <a href="#" class="text-white d-flex justify-content-between align-items-center m-0"
+              style="text-decoration:none;" @click.prevent="goToLeaveRequests('FOR DEPARTMENT HEAD APPROVAL', user.job_title)">
               <span>View Details</span>
               <i class="fas fa-arrow-right"></i>
             </a>
@@ -164,6 +180,7 @@ export default {
       sl_used: 0,
 
       for_dept_head_approval_pending: 0,
+      for_dept_head: 0,
 
       calendarOptions: {
         plugins: [dayGridPlugin, interactionPlugin, bootstrap5Plugin],
@@ -180,12 +197,12 @@ export default {
           center: 'title',
           right: 'dayGridMonth,dayGridWeek'
         },
-        eventRender: this.customEventRendering,
+        eventContent: this.customEventRendering,
       }
     }
   },
   mounted() {
-    this.fetchForApprovalCount()
+    this.fetchForApprovalCount();
   },
 
   computed: {
@@ -215,8 +232,14 @@ export default {
   },
 
   methods: {
-    goToLeaveRequests(status) {
-      this.$router.push({ name: 'LeaveRequests', query: { status: status } });
+    goToLeaveRequests(status, job_title) {
+   
+        this.$router.push({ 
+              name: 'LeaveRequests', 
+              query: { 
+                status: status, job_title: job_title } 
+              });
+
     },
 
     file_leave_btn() {
@@ -234,27 +257,34 @@ export default {
 
     customEventRendering(info) {
       const event = info.event;
-      event.setProp('backgroundColor', event.extendedProps.color);
-      event.setProp('borderColor', event.extendedProps.color);
-      event.setProp('textColor', '#ffffff');
+      // event.setProp('backgroundColor', event.extendedProps.color);
+      // event.setProp('borderColor', event.extendedProps.color);
+      // event.setProp('textColor', '#ffffff');
+      const customContent = document.createElement('div');
+      customContent.innerHTML = `<span style="color: ${event.extendedProps.color};">${event.title}</span>`;
+      return { domNodes: [customContent] };
     },
 
     fetchForApprovalCount() {
+
       fetch(`${API_BASE}/for_approval_count`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fullName: `${this.user.first_name} ${this.user.last_name}` })
+        body: JSON.stringify({ 
+          fullName: `${this.user.first_name} ${this.user.last_name}`,
+          job_title: this.user.job_title,
+          department: this.user.dept_code,
+        })
       })
         .then(res => res.json())
         .then(data => {
+          // console.log(data)
           if (data.success) {
-            this.for_dept_head_approval_pending = data.app_count || 0;
+            this.for_dept_head_approval_pending = data.fapp_count || 0;
+            this.for_dept_head= data.app_count || 0;
             
             this.vl_used = data.used_vl || 0;
             this.sl_used = data.used_sl || 0;
-
-            // console.log('VL used days:', this.vl_used);
-            console.log('SL used days:', this.sl_used);
           } else {
             console.error('for_approval_count error:', data.error);
           }

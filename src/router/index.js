@@ -20,6 +20,7 @@ const routes = [
     meta: { requiresAuth: true },
     props: (route) => ({
       status: route.query.status,
+      job_title: route.query.job_title,
     }),
   },
 ];
