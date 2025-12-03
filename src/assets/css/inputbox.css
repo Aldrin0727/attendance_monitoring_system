@@ -1,0 +1,65 @@
+@import url(../../../public/global.css);
+.form-floating .form-control, #searchInput {
+    background-color: var(--semi-white) !important; /* Dark background */
+    /* color: var(--super-dark) !important; */
+    border: 1px solid var( --dark-mint);
+    font-size: 14px;
+  }
+  
+  .form-floating label {
+    color: var(--super-dark)
+  }
+  
+  .form-floating .form-control:focus {
+    border-color: var(--pastel-blue) !important;
+    box-shadow: none;
+  }
+
+  .search-icon{
+    color: var( --mint);
+    margin-right: 5px;
+  }
+  
+  @media (max-width: 768px) {
+    .floating-label {
+      max-width: 100%;
+      padding: 0 15px;
+    }
+  }
+  
+  @media (max-width: 480px) {
+    .floating-label label {
+      font-size: 12px;
+    }
+  
+    .floating-label input {
+      font-size: 12px;
+      padding: 10px;
+    }
+  }
+  
+  .form-control{
+   font-size: 14px;
+  }
+  .form-control:focus, select:focus {
+    box-shadow: rgba(50, 50, 93, 0.25) 0px 2px 5px -1px, rgba(0, 0, 0, 0.3) 0px 1px 3px -1px !important;
+    border: 1px solid var( --dark-mint) !important
+}
+
+input:disabled {
+  color: var(--super-dark) !important; /* Light gray background */
+  background-color: var(--pastel-blue) !important; /* Darker gray text */
+  cursor: not-allowed;
+}
+
+/* Change background color of selected option */
+select option:checked {
+  background-color: var(--mint) !important; 
+  color: var(--white);
+}
+
+.dropdown-item:focus,
+.dropdown-item:hover {
+    background-color: red !important;
+    color: white !important;
+}

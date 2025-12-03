@@ -9,3 +9,8 @@ export const jobTitleColors = {
   "Department Head": "badge bg-success text-white custom-badge fw-normal",
   Staff: "badge bg-dark text-white custom-badge fw-normal",
 };
+
+export const statusColors = {
+  "FOR DEPARTMENT HEAD APPROVAL": "badge custom-blue text-white custom-badge fw-normal",
+  "APPROVED": "badge custom-green-2 text-white custom-badge fw-normal",
+};
