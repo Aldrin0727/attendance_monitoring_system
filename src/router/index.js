@@ -11,7 +11,17 @@ const routes = [
     path: "/dashboard",
     name: "Dashboard",
     component: () => import("../views/dashboard.vue"),
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true },
+  },
+  {
+    path: "/leave_requests",
+    name: "LeaveRequests",
+    component: () => import("../views/leave_requests.vue"),
+    meta: { requiresAuth: true },
+    props: (route) => ({
+      status: route.query.status,
+      job_title: route.query.job_title,
+    }),
   },
 ];
 

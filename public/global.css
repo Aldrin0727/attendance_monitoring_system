@@ -18,3 +18,58 @@ body,#app,html {
 .custom-badge {
   font-size: 13px;
 }
+
+
+  .custom-green{
+    background-color: #95d5b2 !important;
+  }
+  .custom-yellow{
+    background-color: #ffd60a !important;
+  }
+
+  .custom-info{
+    background-color: #00ff00 !important;
+  }
+
+  .custom-red{
+    background-color: #ff0000 !important;
+  }
+  .custom-red-2{
+    background-color: #4a0404 !important;
+  }
+
+  .custom-blue{
+    background-color: #219ebc !important;
+  }
+  .custom-violet{
+    background-color: #9e0059 !important;
+  }
+  
+  .custom-orange{
+    background-color: #d8572a !important;
+  }
+  .custom-red-2{
+    background-color: #ae2631 !important;
+  }
+  .custom-green-2{
+    background-color: #55833b !important;
+  }
+  .custom-v{
+    background-color: #ec7c6c !important;
+  }
+  .custom-sis{
+    background-color: #0077b6 !important;
+  }
+  .custom-crms{
+    background-color: #a8505d !important;
+  }
+  .custom-tckt{
+    background-color: var(--dark-mint) !important;
+  }
+  .custom-pink{
+    background-color: #fb6f92 !important;
+  }
+  .custom-orange-2{
+    background-color: #9b5de5 !important;
+  }
+  

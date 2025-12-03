@@ -9,7 +9,7 @@ export const getUserData = () => {
 
     try {
         const parsedUser = JSON.parse(storedUser);
-        console.log("Parsed User Data:", parsedUser);
+        // console.log("Parsed User Data:", parsedUser);
 
         return {
             id: parsedUser.id || '',
@@ -21,6 +21,10 @@ export const getUserData = () => {
             dept_code: parsedUser.dept_code || '',
             role: parsedUser.role || '', 
             job_title: parsedUser.job_title || '', 
+            position: parsedUser.position || '', 
+            contact: parsedUser.contact || '', 
+            address: parsedUser.address || '', 
+            emp_id: parsedUser.emp_id || '', 
         };
     } catch (error) {
         console.error("Error parsing user data:", error);
