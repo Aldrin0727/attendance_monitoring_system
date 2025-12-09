@@ -1,3 +1,5 @@
+
+/* @import url(../src/assets/css/modal.css); */
 :root {
   --dark: #114d70;
   --pastel-blue: #c8d8e4;
@@ -41,6 +43,7 @@ body,#app,html {
   .custom-blue{
     background-color: #219ebc !important;
   }
+  
   .custom-violet{
     background-color: #9e0059 !important;
   }

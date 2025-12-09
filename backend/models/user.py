@@ -61,6 +61,10 @@ def login():
         "first_login": user["first_login"],
         "role": user["role"],
         "job_title": user["job_title"],
+        "emp_id": user["emp_id"],
+        "address": user["address"],
+        "contact": user["contact"],
+        "position": user["position"],
     }
 
     return jsonify({

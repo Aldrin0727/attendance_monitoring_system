@@ -33,7 +33,7 @@
         </div>
 
         <!-- DataTable -->
-        <div class="card p-4 mt-3">
+    <div class="card p-4 mt-3">
             <DataTable v-if="leaveRequests.length" :key="datatableKey"
                 class="table table-striped table-bordered display custom-table" :columns="columns" :data="leaveRequests"
                 :options="datatableOptions" />
@@ -46,6 +46,7 @@
     :isVisible="is_modal_visible" 
     :leaveRequest="selectedLeaveRequest" 
     @close="closeModal"
+     @updateDataTable="handleDataTableUpdate" 
 />
 
 </template>
@@ -58,7 +59,7 @@ import DataTablesLib from 'datatables.net';
 import datetime from '@/components/datetime.vue';
 import { getUserData } from '@/utils/get_user_data'
 import API_BASE from '@/utils/api_config';
-import { statusColors } from '@/utils/badge_colors';
+import { statusColors, leave_type_Colors } from '@/utils/badge_colors';
 import leave_approval from '@/components/modals/leave_approval.vue';
 
 DataTable.use(DataTablesLib);
@@ -81,7 +82,12 @@ export default {
             is_modal_visible: false,
 
             columns: [
-                { title: 'Type', data: 'leave_type' },
+                { title: 'Type', data: 'leave_type',
+                     render: function (data) {
+                        const statusClass = leave_type_Colors[data] || 'badge bg-secondary text-white fw-normal';
+                        return `<span class="${statusClass}">${data}</span>`;
+                    }
+                 },
                 {
                     title: 'Date From', data: 'leave_from',
                     render: function (data) {
@@ -137,6 +143,8 @@ export default {
         }
     },
     methods: {
+      
+
         fetchUserLeaveRequests() {
             const payload = {
                 fullName: `${this.user.first_name} ${this.user.last_name}`,
@@ -144,6 +152,7 @@ export default {
                 leave_type: this.selectedLeaveType || '',
                 job_title: this.job_title || '',
                 dept_code: this.user.dept_code || '',
+                emp_id: this.user.emp_id || '',
             };
             // console.log(payload)
 
@@ -172,9 +181,14 @@ export default {
             this.is_modal_visible = true;
         },
 
+        handleDataTableUpdate() {
+            this.fetchUserLeaveRequests();
+            this.datatableKey++;
+        },
+
         closeModal() {
             this.is_modal_visible = false;
-            console.log('Modal closed:', this.is_modal_visible);
+            // console.log('Modal closed:', this.is_modal_visible);
         }
 
     },

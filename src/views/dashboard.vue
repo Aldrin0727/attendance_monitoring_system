@@ -22,7 +22,7 @@
   <div class="row mt-1 g-3">
     <div class="col-lg-8 col-md-12 col-12">
       <div class="custom-card">
-        <FullCalendar :options="calendarOptions" />
+        <FullCalendar ref="calendar" :options="calendarOptions" />
       </div>
     </div>
 
@@ -126,13 +126,14 @@
           <div class="card-body has-fav-padding d-flex justify-content-between align-items-center">
             <font-awesome-icon :icon="['fas', 'user-check']" class="font-awesome-icon" style="color:#0dcaf0" />
             <div class="text-end">
-              <h3 class="fw-bold mb-0">{{ for_dept_head?? 0 }}</h3>
+              <h3 class="fw-bold mb-0">{{ for_dept_head ?? 0 }}</h3>
               <span class="text-muted">Pending for Your Approval (Only for DH)</span>
             </div>
           </div>
           <div class="card-footer py-1 px-2">
             <a href="#" class="text-white d-flex justify-content-between align-items-center m-0"
-              style="text-decoration:none;" @click.prevent="goToLeaveRequests('FOR DEPARTMENT HEAD APPROVAL', user.job_title)">
+              style="text-decoration:none;"
+              @click.prevent="goToLeaveRequests('FOR DEPARTMENT HEAD APPROVAL', user.job_title)">
               <span>View Details</span>
               <i class="fas fa-arrow-right"></i>
             </a>
@@ -162,6 +163,8 @@ import bootstrap5Plugin from '@fullcalendar/bootstrap5';
 import 'bootstrap/dist/css/bootstrap.css';
 import 'bootstrap-icons/font/bootstrap-icons.css';
 import file_leave_modal from '@/components/modals/file_leave_modal.vue';
+import { leave_type_Colors } from '@/utils/badge_colors';
+// leave_type_Colors
 
 export default {
   components: {
@@ -182,16 +185,14 @@ export default {
       for_dept_head_approval_pending: 0,
       for_dept_head: 0,
 
+      leaveEvents: [],
+
       calendarOptions: {
         plugins: [dayGridPlugin, interactionPlugin, bootstrap5Plugin],
         initialView: 'dayGridMonth',
         themeSystem: 'bootstrap5',
         dateClick: this.handleDateClick,
-        events: [
-          { title: 'Event 1', date: '2025-11-10', color: '#ff7f50' },
-          { title: 'Event 2', date: '2025-11-12', color: '#7f8c8d' },
-          { title: 'Event 3', date: '2025-11-14', color: '#3498db' }
-        ],
+        events: this.leaveEvents,
         headerToolbar: {
           left: 'prev,next today',
           center: 'title',
@@ -203,12 +204,19 @@ export default {
   },
   mounted() {
     this.fetchForApprovalCount();
+    this.fetchLeaveEvents();
   },
+  watch: {
+    leaveEvents(newEvents) {
+      this.calendarOptions.events = newEvents;  
+    }
+  },
+
 
   computed: {
     vlRemaining() {
       return Math.max(this.vl_total - this.vl_used, 0);
-      
+
     },
     slRemaining() {
       return Math.max(this.sl_total - this.sl_used, 0);
@@ -233,12 +241,13 @@ export default {
 
   methods: {
     goToLeaveRequests(status, job_title) {
-   
-        this.$router.push({ 
-              name: 'LeaveRequests', 
-              query: { 
-                status: status, job_title: job_title } 
-              });
+
+      this.$router.push({
+        name: 'LeaveRequests',
+        query: {
+          status: status, job_title: job_title
+        }
+      });
 
     },
 
@@ -270,7 +279,7 @@ export default {
       fetch(`${API_BASE}/for_approval_count`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           fullName: `${this.user.first_name} ${this.user.last_name}`,
           job_title: this.user.job_title,
           department: this.user.dept_code,
@@ -281,8 +290,8 @@ export default {
           // console.log(data)
           if (data.success) {
             this.for_dept_head_approval_pending = data.fapp_count || 0;
-            this.for_dept_head= data.app_count || 0;
-            
+            this.for_dept_head = data.app_count || 0;
+
             this.vl_used = data.used_vl || 0;
             this.sl_used = data.used_sl || 0;
           } else {
@@ -294,15 +303,80 @@ export default {
         });
     },
 
+    fetchLeaveEvents() {
+      fetch(`${API_BASE}/date_calendar`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          dept_code: this.user.dept_code,
+        })
+      })
+        .then(res => res.json())
+        .then(data => {
+          if (data.success && data.dateall) {
+
+            this.leaveEvents = data.dateall.map(dateall => {
+              const leave_type = dateall.leave_type;
+              const colorClass = leave_type_Colors[leave_type] || 'badge default-class';
+              const formattedDate = new Date(dateall.leave_from);
+              const year = formattedDate.getFullYear();
+              const month = (formattedDate.getMonth() + 1).toString().padStart(2, '0');  
+              const day = formattedDate.getDate().toString().padStart(2, '0');  
+              const formattedDateString = `${year}-${month}-${day}`; 
+
+
+              return {
+                title: `${dateall.leave_type} - ${dateall.user.split(' ')[0]}`,
+                date: formattedDate,
+                classNames: [colorClass], 
+              };
+            });
+
+            console.log('Mapped leaveEvents:', this.leaveEvents[1]);  
+          } else {
+            console.error('Error fetching leave events:', data.error);
+          }
+        })
+        .catch(err => {
+          console.error("Error fetching leave events:", err);
+        });
+    }
+
+
 
   }
 }
 </script>
 
 <style scoped>
+@import url(../assets/css/modal.css);
 @import url(../assets/css/cards.css);
 @import url(../assets/css/buttons.css);
 @import url(../../public/global.css);
+
+
+.modal {
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);  
+  display: flex;
+  justify-content: center;
+  align-items: start;
+  z-index: 1050;
+}
+
+.modal-dialog {
+  width: 120%;
+  margin: 40px;
+  position: relative;
+  top: 0; 
+  max-width: 800px !important;
+  background-color: #fff;
+  border-radius: 8px; 
+}
+
 
 .fc {
   max-width: 100%;
