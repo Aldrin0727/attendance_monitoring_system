@@ -61,6 +61,10 @@ def login():
         "first_login": user["first_login"],
         "role": user["role"],
         "job_title": user["job_title"],
+        "emp_id": user["emp_id"],
+        "address": user["address"],
+        "contact": user["contact"],
+        "position": user["position"],
     }
 
     return jsonify({
@@ -92,27 +96,27 @@ def get_depthead():
    except Exception as e:
         return jsonify({"error": str(e)}), 500
    
-@users_bp.route('/get_user_info', methods=['POST'])
-def get_user_info():  
-   try:
-        data = request.get_json()
-        username = data.get("fullName")
+# @users_bp.route('/get_user_info', methods=['POST'])
+# def get_user_info():  
+#    try:
+#         data = request.get_json()
+#         username = data.get("fullName")
 
-        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
-        sql = f"""
-            SELECT *
-            FROM `{Config.MYSQL_DB2}`.users
-            WHERE CONCAT(first_name,' ',last_name) = %s
-            AND acc_status = 1
+#         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+#         sql = f"""
+#             SELECT *
+#             FROM `{Config.MYSQL_DB2}`.users
+#             WHERE CONCAT(first_name,' ',last_name) = %s
+#             AND acc_status = 1
 
-        """
+#         """
 
-        cursor.execute(sql, (username,))
-        heads = cursor.fetchall()
+#         cursor.execute(sql, (username,))
+#         heads = cursor.fetchall()
 
-        cursor.close()
+#         cursor.close()
 
-        return jsonify({"all_list":heads, "success": True}), 201
-   except Exception as e:
-        return jsonify({"error": str(e)}), 500
+#         return jsonify({"all_list":heads, "success": True}), 201
+#    except Exception as e:
+#         return jsonify({"error": str(e)}), 500
 

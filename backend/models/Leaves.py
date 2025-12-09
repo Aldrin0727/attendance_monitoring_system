@@ -18,7 +18,8 @@ def add_leave_details():
         leave_from = data.get("date_from")
         leave_to = data.get("date_to")
         leave_reason = data.get("leave_reason")
-        approver = 'test'
+        emp_id = data.get("emp_id")
+        # approver = 'test'
        
         year = datetime.now().year
 
@@ -38,14 +39,31 @@ def add_leave_details():
         newref_No = f"{year}{str(ref_sequence).zfill(4)}"
 
         cursor.execute(
-            "INSERT INTO Leave_Details (user,ref_no,leave_type,leave_number,leave_from,leave_to,leave_reason,date_created,department,status,approver) " \
-            "VALUES (%s, %s, %s, %s, %s, %s, %s, NOW(), %s, %s ,%s)",(username,newref_No,leave_type,total_leave,leave_from,leave_to,leave_reason,department,'FOR DEPARTMENT HEAD APPROVAL',approver) )
+            "INSERT INTO Leave_Details (`user`,ref_no,leave_type,leave_number,leave_from,leave_to,leave_reason,date_created,department,status,emp_id) "
+            "VALUES (%s, %s, %s, %s, %s, %s, %s, NOW(), %s, %s, %s)",
+            (username, newref_No, leave_type, total_leave, leave_from, leave_to, leave_reason,
+            department, 'FOR DEPARTMENT HEAD APPROVAL', emp_id)
+        )
+
+        cursor.execute(
+            """INSERT INTO leave_history (module, ref_no, action, `user`, history_date) 
+            VALUES (%s, %s, %s, %s, NOW())""",
+            ('CREATE', newref_No, 'New Leave Request Has been submitted', username)
+        )
+
         mysql.connection.commit()
         cursor.close()
-        
-        return jsonify({"message": "Submitted Leave is now For Approval.","success":True,"ref_no":newref_No}), 201
+
+        return jsonify({
+            "message": "Submitted Leave is now For Approval.",
+            "success": True,
+            "ref_no": newref_No
+        }), 201
+
     except Exception as e:
-        return jsonify({"error": str(e)}),500
+        mysql.connection.rollback()
+        return jsonify({"error": str(e)}), 500
+    
     
 @leave_bp.route("/for_approval_count", methods=['POST'])
 def get_count_approval():
@@ -139,7 +157,7 @@ def get_leave_list():
     #    return jsonify({"forapp_list":forapp_list,"app_list":app_list,"success":True}), 200
     except Exception as e:
         return jsonify({"error": str(e)}),500
-    
+ 
 @leave_bp.route('/all_leave_details', methods=['POST'])
 def get_all_leave_details():
     try:   
@@ -154,10 +172,12 @@ def get_all_leave_details():
         
         if position == 'Department Head' and status == 'FOR DEPARTMENT HEAD APPROVAL':
             base_query = f"""
-                    SELECT * 
+                    SELECT * ,
+                    (SELECT `{Config.MYSQL_DB2}`.departments.department from Leave_Details LEFT JOIN `{Config.MYSQL_DB2}`.departments ON Leave_Details.department = dept_code
+                    where Leave_Details.department = "ITD" group by department) as dept_code
                     FROM Leave_Details 
                     LEFT JOIN `{Config.MYSQL_DB2}`.users
-                        ON user = CONCAT(first_name, ' ', last_name)
+                        ON Leave_Details.emp_id = ticketing_dev.users.emp_id
                     WHERE Leave_Details.department = %s
                     """
             values = [department]
@@ -166,7 +186,9 @@ def get_all_leave_details():
             #     SELECT * from Leave_Details WHERE user = %s
             # """
             base_query = f"""
-                    SELECT * 
+                    SELECT * ,
+                    (SELECT `{Config.MYSQL_DB2}`.departments.department from Leave_Details LEFT JOIN `{Config.MYSQL_DB2}`.departments ON Leave_Details.department = dept_code
+                    where Leave_Details.department = "ITD" group by department) as dept_code
                     FROM Leave_Details 
                     LEFT JOIN `{Config.MYSQL_DB2}`.users
                         ON user = CONCAT(first_name, ' ', last_name)
@@ -188,5 +210,30 @@ def get_all_leave_details():
 
         cursor.close()
         return jsonify({"all_list":all_list, "success": True}), 201
+    except Exception as e:
+        return jsonify({"error": str(e)}),500
+    
+@leave_bp.route('/approved_deny_leaves', methods=['POST'])
+def update_approved__deny_leaves():
+    try:  
+        data = request.get_json()
+        args = data.get("args")
+        ref_no = data.get("ref_no")
+        username = data.get("fullName")
+
+        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor.execute(
+            "UPDATE  Leave_Details set status = %s WHERE ref_no = %s",(args, ref_no))
+        
+        cursor.execute(
+            """INSERT INTO leave_history (module, ref_no, action, `user`, history_date) 
+            VALUES (%s, %s, %s, %s, NOW())""",
+            ('APPROVAL', ref_no, 'Approved Leave', username)
+        )
+        
+        mysql.connection.commit()
+        cursor.close()
+
+        return jsonify({"success": True,"args":args,"ref_no":ref_no}), 201
     except Exception as e:
         return jsonify({"error": str(e)}),500

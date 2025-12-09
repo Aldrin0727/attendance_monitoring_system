@@ -144,6 +144,7 @@ export default {
                 leave_type: this.selectedLeaveType || '',
                 job_title: this.job_title || '',
                 dept_code: this.user.dept_code || '',
+                emp_id: this.user.emp_id
             };
             // console.log(payload)
 
@@ -156,7 +157,7 @@ export default {
             })
                 .then(response => response.json())
                 .then(data => {
-                    // console.log(data)
+                    console.log(data)
                     this.leaveRequests = data.all_list || [];
                     this.datatableKey++;  // Re-render the DataTable
                 })

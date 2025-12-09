@@ -11,7 +11,7 @@
 
                 <!-- Form -->
                 <form @submit.prevent="submitForm">
-                    <div class="modal-body">
+                    <div class="modal-body pb-0">
                         <!-- User Information -->
                         <div class="section">
                             <div class="section-title">User Information</div>
@@ -51,7 +51,7 @@
                             <div class="section-title">Leave Request</div>
                             <hr class="mt-0">
 
-                            <div class="row">
+                            <div class="row mb-0">
                                 <div class="col-6 mb-3">
                                     <label class="form-label label-sm">
                                         Type of Leave <strong style="color: red">*</strong>
@@ -127,7 +127,7 @@
                     </div>
 
                     <!-- Modal Footer -->
-                    <div class="modal-footer mt-2">
+                    <div class="modal-footer m-0">
                         <button type="submit" class="btn btn-success">Submit</button>
                         <button type="button" class="btn btn-info" @click="closeModal">Close</button>
                     </div>
@@ -286,7 +286,8 @@ export default {
                 date_from: this.leaveForm.date_from,
                 date_to: this.leaveForm.date_to,
                 leave_reason: this.leaveForm.leave_reason,
-                department_name: this.user.dept_code
+                department_name: this.user.dept_code,
+                emp_id: this.user.emp_id,
             };
 
             // console.log(formData)
@@ -311,6 +312,7 @@ export default {
                     console.error("Error submitting form:", error);
                     Swal.fire("Error", "Something went wrong", "error");
                 });
+
 
             // after successful submit, close modal
             this.closeModal();
