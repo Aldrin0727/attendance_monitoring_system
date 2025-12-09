@@ -1,7 +1,5 @@
 import API_BASE from "./api_config";
 
-// get_user_data.js
-// API_BASE
 export const getUserData = () => {
     const storedUser = localStorage.getItem('user');
     // console.log("Raw localStorage Data:", storedUser);

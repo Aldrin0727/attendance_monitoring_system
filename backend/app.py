@@ -28,9 +28,11 @@ logging.basicConfig(level=logging.INFO)
 # Register blueprints
 from models.Leaves import leave_bp
 from models.user import users_bp
+from models.attendance import attendance_bp
 
 app.register_blueprint(leave_bp)
 app.register_blueprint(users_bp)
+app.register_blueprint(attendance_bp)
 
 
 def get_db():

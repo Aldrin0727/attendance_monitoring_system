@@ -23,6 +23,12 @@ const routes = [
       job_title: route.query.job_title,
     }),
   },
+   {
+    path: "/attendance",
+    name: "Attendance",
+    component: () => import("../views/attendance.vue"),
+    meta: { requiresAuth: true },
+  },
 ];
 
 

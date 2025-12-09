@@ -7,6 +7,7 @@ leave_bp = Blueprint('leave_bp', __name__)
 
 
  
+ 
 @leave_bp.route('/create_leave', methods=['POST'])
 def add_leave_details():
     try: 
@@ -45,10 +46,23 @@ def add_leave_details():
             department, 'FOR DEPARTMENT HEAD APPROVAL', emp_id)
         )
 
+<<<<<<< HEAD
         cursor.execute(
             """INSERT INTO leave_history (module, ref_no, action, `user`, history_date) 
             VALUES (%s, %s, %s, %s, NOW())""",
             ('CREATE', newref_No, 'New Leave Request Has been submitted', username)
+=======
+        # cursor.execute(
+        #     """INSERT INTO leave_history (module, ref_no, action, `user`, history_date) 
+        #     VALUES (%s, %s, %s, %s, NOW())""",
+        #     ('CREATE', newref_No, 'New Leave Request Has been submitted', username)
+        # )
+
+        cursor.execute(
+            """INSERT INTO leave_history (module, ref_no, action, `user`, history_date) 
+            VALUES (%s, %s, %s, %s, NOW())""",
+            ('APPROVAL', newref_No, 'New Leave Request Has been submitted', username)
+>>>>>>> origin/lj_branch
         )
 
         mysql.connection.commit()
@@ -63,7 +77,10 @@ def add_leave_details():
     except Exception as e:
         mysql.connection.rollback()
         return jsonify({"error": str(e)}), 500
+<<<<<<< HEAD
     
+=======
+>>>>>>> origin/lj_branch
     
 @leave_bp.route("/for_approval_count", methods=['POST'])
 def get_count_approval():
@@ -219,11 +236,19 @@ def update_approved__deny_leaves():
         data = request.get_json()
         args = data.get("args")
         ref_no = data.get("ref_no")
+<<<<<<< HEAD
         username = data.get("fullName")
 
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
         cursor.execute(
             "UPDATE  Leave_Details set status = %s WHERE ref_no = %s",(args, ref_no))
+=======
+        username = data.get("user")
+
+        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor.execute(
+            "UPDATE  Leave_Details set status = %s,approved_by = %s, date_approved = NOW() WHERE ref_no = %s",(args, username, ref_no))
+>>>>>>> origin/lj_branch
         
         cursor.execute(
             """INSERT INTO leave_history (module, ref_no, action, `user`, history_date) 
@@ -236,4 +261,27 @@ def update_approved__deny_leaves():
 
         return jsonify({"success": True,"args":args,"ref_no":ref_no}), 201
     except Exception as e:
+<<<<<<< HEAD
         return jsonify({"error": str(e)}),500
+=======
+        return jsonify({"error": str(e)}),500
+    
+@leave_bp.route('/date_calendar', methods=['POST'])
+def get_calendar_date():
+    try:
+        data = request.get_json()
+        department = data.get("dept_code")
+
+        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        date_qry = f"""
+                       SELECT * from Leave_Details where department = %s"""
+        values = [department] 
+        cursor.execute(date_qry, tuple(values))
+        dateall = cursor.fetchall()
+        cursor.close()
+
+        return jsonify({"success": True,"dateall":dateall}), 201
+
+    except Exception as e:
+        return jsonify({"error": str(e)}),500
+>>>>>>> origin/lj_branch

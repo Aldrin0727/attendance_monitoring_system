@@ -11,7 +11,7 @@
 
                 <!-- Form -->
                 <form @submit.prevent="submitForm">
-                    <div class="modal-body">
+                    <div class="modal-body pb-1">
                         <!-- User Information Section -->
                         <div class="section">
                             <div class="section-title">User Information</div>
@@ -67,12 +67,11 @@
                             <div class="row mb-3">
                                 <div class="col-6">
                                     <label class="form-label label-sm">Date of Leave From</label>
-                                    <input type="date" class="form-control" v-model="leaveRequest.leave_from"
-                                        readonly />
+                                     <input type="date" class="form-control" v-model="formattedLeaveFrom" readonly />
                                 </div>
                                 <div class="col-6">
                                     <label class="form-label label-sm">Date of Leave To</label>
-                                    <input type="date" class="form-control" v-model="leaveRequest.leave_to" readonly />
+                                    <input type="date" class="form-control" v-model="formattedLeaveTo" readonly />
                                 </div>
                             </div>
                             <div class="row">
@@ -90,19 +89,19 @@
                         <!-- approver -->
                         <div class="section">
                             <div class="section-title">APPROVER AND STATUS OF LEAVE</div>
-                            <hr class="mt-0">
+                            <hr class="mt-0 mb-2">
                             <div class="row mt-0">
-                                <div class="col-6">
+                                <div class="col-4">
                                     <label for="approver" class="form-label label-sm">Approved by</label>
-                                    <input type="text" id="approver" class="form-control" readonly />
+                                    <input type="text" id="approver" class="form-control" v-model="leaveRequest.approved_by" readonly />
                                 </div>
-                                <div class="col-3">
+                                <div class="col-5">
                                     <label for="leave_status" class="form-label label-sm">Leave Status</label>
-                                    <input type="text" id="leave_status" class="form-control" readonly />
+                                    <input type="text" id="leave_status" class="form-control"  v-model="leaveRequest.status" readonly />
                                 </div>
                                 <div class="col-3">
                                     <label for="leave_status" class="form-label label-sm">Date Approved</label>
-                                    <input type="text" id="leave_status" class="form-control" readonly />
+                                    <input type="text" id="leave_status" class="form-control" v-model="formatteddate_approved"  readonly />
                                 </div>
                             </div>
                         </div>
@@ -114,11 +113,15 @@
                         <div
                             v-if="user.job_title == 'Department Head' && leaveRequest.status == 'FOR DEPARTMENT HEAD APPROVAL'">
 
-                            <button type="button" class="btn btn-secondary me-2" @click="approveLeaveRequest">Approve</button>
+                            <button type="button" class="btn btn-secondary me-2"
+                                @click="approveLeaveRequest">Approve</button>
                             <button type="button" class="btn btn-danger me-2" @click="denyLeaveRequest">Deny</button>
-                            <!-- <button type="button" class="btn btn-info " @click="closeModal">Close</button> -->
-                        </div>
 
+
+                        </div>
+                        <div v-else>
+                            <button type="button" class="btn btn-info " @click="closeModal">Close</button>
+                        </div>
                     </div>
                 </form>
             </div>
@@ -127,7 +130,9 @@
 </template>
 
 <script>
+import API_BASE from '@/utils/api_config';
 import { getUserData } from '@/utils/get_user_data';
+
 export default {
     props: {
         isVisible: Boolean,
@@ -144,21 +149,70 @@ export default {
             this.$emit("close");
         },
 
-        submitForm() {
-            // Add form submission logic here
-            this.closeModal();
-        },
-
         approveLeaveRequest() {
-            // Logic for approving the leave request
-            console.log('Leave request approved');
-            this.closeModal();  // Close modal after action
+             fetch(`${API_BASE}/approved_deny_leaves`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    args: "APPROVED",
+                    ref_no: this.leaveRequest.ref_no,
+                    user: `${this.user.first_name} ${this.user.last_name}`,
+                }
+                ),
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        Swal.fire("Success", "Leave request approved", "success");
+                        this.$emit('updateDataTable'); // Emit the event
+                        this.closeModal(); // Close the modal
+                    } else {
+                        Swal.fire("Error", data.error || "Failed to submit leave", "error");
+                    }
+                })
+                .catch(error => {
+                    console.error("Error submitting form:", error);
+                    Swal.fire("Error", "Something went wrong", "error");
+                });
         },
 
         denyLeaveRequest() {
-            // Logic for denying the leave request
-            console.log('Leave request denied');
-            this.closeModal();  // Close modal after action
+             fetch(`${API_BASE}/approved_deny_leaves`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    args: "DENIED",
+                    ref_no: this.leaveRequest.ref_no,
+                    user: `${this.user.first_name} ${this.user.last_name}`,
+                }
+                ),
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        Swal.fire("Success", "Leave request DENIED", "success");
+                        this.$emit('updateDataTable'); // Emit the event
+                        this.closeModal(); // Close the modal
+                    } else {
+                        Swal.fire("Error", data.error || "Failed to submit leave", "error");
+                    }
+                })
+                .catch(error => {
+                    console.error("Error submitting form:", error);
+                    Swal.fire("Error", "Something went wrong", "error");
+                });
+        },
+
+        formatDate(date) {
+            if (date) {
+                const formattedDate = new Date(date);
+                return formattedDate.toISOString().split('T')[0]; // returns yyyy-mm-dd
+            }
+            return '';
         }
     },
 
@@ -170,7 +224,18 @@ export default {
                 'SL': 'Sick Leave',
             };
             return leaveTypes[this.leaveRequest.leave_type]
+        },
+        formattedLeaveTo() {
+            return this.formatDate(this.leaveRequest.leave_to);
+        },
+        formattedLeaveFrom() {
+            return this.formatDate(this.leaveRequest.leave_from);
+        },
+        formatteddate_approved() {
+            return this.formatDate(this.leaveRequest.date_approved);
         }
+
+
     },
 };
 </script>
