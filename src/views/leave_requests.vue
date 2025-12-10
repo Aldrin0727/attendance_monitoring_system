@@ -152,11 +152,7 @@ export default {
                 leave_type: this.selectedLeaveType || '',
                 job_title: this.job_title || '',
                 dept_code: this.user.dept_code || '',
-<<<<<<< HEAD
-                emp_id: this.user.emp_id
-=======
                 emp_id: this.user.emp_id || '',
->>>>>>> origin/lj_branch
             };
             // console.log(payload)
 
