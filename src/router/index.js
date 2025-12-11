@@ -29,6 +29,12 @@ const routes = [
     component: () => import("../views/attendance.vue"),
     meta: { requiresAuth: true },
   },
+   {
+    path: "/ob_ot",
+    name: "OB_OT",
+    component: () => import("../views/ob_ot.vue"),
+    meta: { requiresAuth: true },
+  },
 ];
 
 
