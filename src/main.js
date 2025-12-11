@@ -26,8 +26,11 @@ import '../public/global.css'
 import 'datatables.net-bs5';
 import 'datatables.net-bs5/css/dataTables.bootstrap5.min.css';
 
-import 'datatables.net-bs5';
-import 'datatables.net-bs5/css/dataTables.bootstrap5.min.css';
+import DataTable from 'datatables.net-vue3';
+import DataTablesLib from 'datatables.net';
+
+
+DataTable.use(DataTablesLib);
 
 /* add all solid icons to the library */
 library.add(fas, far, fab)

@@ -21,3 +21,10 @@ export const leave_type_Colors = {
   "SL": "badge custom-v text-white custom-badge fw-normal",
   "EL": "badge custom-orange text-white custom-badge fw-normal",
 };
+
+export const attendance_Colors = {
+  "LATE": "badge custom-red-2 text-white custom-badge fw-normal",
+  "UNDERTIME": "badge custom-orange-2 text-black custom-badge fw-normal",
+  "HALFDAY": "badge custom-green-2 text-white custom-badge fw-normal",
+  "OVERTIME": "badge custom-blue text-white custom-badge fw-normal",
+};
