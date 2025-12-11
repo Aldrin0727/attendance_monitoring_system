@@ -116,15 +116,18 @@ def get_count_approval():
         fapp_count = cursor.fetchone()["fapp_count"]
 
         cursor.execute("""
-            SELECT count(*) as used_vl from Leave_Details where user = %s and status = 'APPROVED' and (leave_type = 'VL' || leave_type = 'EL')
+            SELECT leave_number as used_vl from Leave_Details where user = %s and status = 'APPROVED' and (leave_type = 'VL' || leave_type = 'EL')
         """, (username,))  
-        used_vl = cursor.fetchone()["used_vl"]
+        row = cursor.fetchone()
+        used_vl = row["used_vl"] if row and row["used_vl"] is not None else 0
+
 
         cursor.execute("""
-            SELECT count(*) as used_sl from Leave_Details where user = %s and status = 'APPROVED' AND leave_type = 'SL'
+            SELECT leave_number as used_sl from Leave_Details where user = %s and status = 'APPROVED' AND leave_type = 'SL'
         """, (username,))  
-        used_sl = cursor.fetchone()["used_sl"]
-
+        row = cursor.fetchone()
+        used_sl = row["used_sl"] if row and row["used_sl"] is not None else 0
+        
         cursor.close()
 
         return jsonify({

@@ -256,7 +256,7 @@ export default {
     // this.fetchOBOTEvents();
     this.fetchLeaveEvents();
     this.fetchForApprovalCountOB_OT();
-  
+
 
     this.refreshInterval = setInterval(() => {
       this.refreshDashboard();
@@ -369,12 +369,12 @@ export default {
       const eventListHTML = eventsForDay
         .map(ev => {
           const color =
-              ev.title.includes("SL") ? "#edc55b" :
+            ev.title.includes("SL") ? "#edc55b" :
               ev.title.includes("VL") ? "#fb6f92" :
-              ev.title.includes("EL") ? "#80e183dc" :
-              ev.title.includes("OB") ? "#b889f2" :
-              ev.title.includes("OT") ? "#50a6c0" :
-              "#ccc";
+                ev.title.includes("EL") ? "#80e183dc" :
+                  ev.title.includes("OB") ? "#b889f2" :
+                    ev.title.includes("OT") ? "#50a6c0" :
+                      "#ccc";
 
           return `
         <div style="
@@ -435,11 +435,7 @@ export default {
 
             this.for_dept_head_approval_pending_ob_ot = data.app_count || 0;
             this.for_dept_head_approval_pending_ob_ot_user = data.user_count || 0;
-            // console.log(data)
-            // this.for_dept_head = data.app_count || 0;
-
-            // this.vl_used = data.used_vl || 0;
-            // this.sl_used = data.used_sl || 0;
+  
           } else {
             console.error('for_approval_count error:', data.error);
           }
@@ -465,9 +461,9 @@ export default {
           if (data.success) {
             this.for_dept_head_approval_pending = data.fapp_count || 0;
             this.for_dept_head = data.app_count || 0;
-
-            this.vl_used = data.used_vl || 0;
-            this.sl_used = data.used_sl || 0;
+            // console.log(data.used_vl)
+            this.vl_used = data.used_vl;
+            this.sl_used = data.used_sl;
           } else {
             console.error('for_approval_count error:', data.error);
           }
@@ -477,76 +473,74 @@ export default {
         });
     },
 
-fetchLeaveEvents() {
-  fetch(`${API_BASE}/date_calendar`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      dept_code: this.user.dept_code,
-    }),
-  })
-    .then(res => res.json())
-    .then(data => {
-      if (!data.success) {
-        console.error("Error fetching combined calendar:", data.error);
-        return;
-      }
+    fetchLeaveEvents() {
+      fetch(`${API_BASE}/date_calendar`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          dept_code: this.user.dept_code,
+        }),
+      })
+        .then(res => res.json())
+        .then(data => {
+          if (!data.success) {
+            console.error("Error fetching combined calendar:", data.error);
+            return;
+          }
 
-      let events = [];
+          let events = [];
 
-      //LEAVES
-      (data.dateall || []).forEach(item => {
-        const start = new Date(item.leave_from);
-        const end = new Date(item.leave_to);
+          //LEAVES
+          (data.dateall || []).forEach(item => {
+            const start = new Date(item.leave_from);
+            const end = new Date(item.leave_to);
 
-        const colorClass = leave_type_Colors[item.leave_type] || "badge default-class";
-        const statusLetter = this.getStatusLetter(item.status);
-        const firstName = item.user?.split(" ")[0] || "User";
+            const colorClass = leave_type_Colors[item.leave_type] || "badge default-class";
+            const statusLetter = this.getStatusLetter(item.status);
+            const firstName = item.user?.split(" ")[0] || "User";
 
-        let current = new Date(start);
+            let current = new Date(start);
 
-        while (current <= end) {
-          events.push({
-            title: `${item.leave_type} - ${firstName} <b>${statusLetter}</b>`,
-            date: new Date(current),
-            classNames: [colorClass],
-            ref_no: item.ref_number
+            while (current <= end) {
+              events.push({
+                title: `${item.leave_type} - ${firstName} <b>${statusLetter}</b>`,
+                date: new Date(current),
+                classNames: [colorClass],
+              });
+
+              current.setDate(current.getDate() + 1);
+            }
           });
 
-          current.setDate(current.getDate() + 1);
-        }
-      });
 
-    
-      // OB/OT
-      (data.otoball || []).forEach(item => {
-        const start = new Date(item.req_from);
-        const end = new Date(item.req_to);
+          // OB/OT
+          (data.otoball || []).forEach(item => {
+            const start = new Date(item.req_from);
+            const end = new Date(item.req_to);
 
-        const colorClass = ob_ot_Colors[item.type] || "badge default-class";
-        const statusLetter = this.getStatusLetter(item.status);
-        const firstName = item.fullName?.split(" ")[0] || "User";
+            const colorClass = ob_ot_Colors[item.type] || "badge default-class";
+            const statusLetter = this.getStatusLetter(item.status);
+            const firstName = item.fullName?.split(" ")[0] || "User";
 
-        let current = new Date(start);
+            let current = new Date(start);
 
-        while (current <= end) {
-          events.push({
-            title: `${item.type} - ${firstName} <b>${statusLetter}</b>`,
-            date: new Date(current),
-            classNames: [colorClass],
-            ref_no: item.ref_number
+            while (current <= end) {
+              events.push({
+                title: `${item.type} - ${firstName} <b>${statusLetter}</b>`,
+                date: new Date(current),
+                classNames: [colorClass],
+              });
+
+              current.setDate(current.getDate() + 1);
+            }
           });
 
-          current.setDate(current.getDate() + 1);
-        }
-      });
-
-      this.leaveEvents = events;
-    })
-    .catch(err => {
-      console.error("Error fetching calendar events:", err);
-    });
-}
+          this.leaveEvents = events;
+        })
+        .catch(err => {
+          console.error("Error fetching calendar events:", err);
+        });
+    }
 
 
 
