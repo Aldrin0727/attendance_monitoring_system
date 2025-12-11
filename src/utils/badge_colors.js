@@ -17,9 +17,16 @@ export const statusColors = {
 };
 
 export const leave_type_Colors = {
-  "VL": "badge custom-crms text-white custom-badge fw-normal",
-  "SL": "badge custom-v text-white custom-badge fw-normal",
-  "EL": "badge custom-orange text-white custom-badge fw-normal",
+  "VL": "badge custom-pink text-dark custom-badge fw-normal",
+  "SL": "badge custom-yellow-2 text-dark custom-badge fw-normal",
+  "EL": "badge custom-green-3 text-dark custom-badge fw-normal",
+};
+
+export const ob_ot_Colors = {
+  "OT": "badge custom-info text-white custom-badge fw-normal",
+  "OB": "badge custom-orange-2 text-white custom-badge fw-normal",
+   "Systems": "badge custom-orange-2 text-black custom-badge fw-normal",
+"Infrastracture": "badge custom-green text-dark custom-badge fw-normal",
 };
 
 export const attendance_Colors = {

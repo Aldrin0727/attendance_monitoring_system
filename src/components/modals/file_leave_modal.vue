@@ -25,21 +25,25 @@
                                 <div class="row mb-3">
                                     <div class="col-6">
                                         <label for="position" class="form-label label-sm">Position</label>
-                                        <input type="text" id="position" class="form-control" v-model="user.position" readonly />
+                                        <input type="text" id="position" class="form-control" v-model="user.position"
+                                            readonly />
                                     </div>
                                     <div class="col-6">
                                         <label for="department" class="form-label label-sm">Department</label>
-                                        <input type="text" id="department" class="form-control" v-model="user.department_name" readonly />
+                                        <input type="text" id="department" class="form-control"
+                                            v-model="user.department_name" readonly />
                                     </div>
                                 </div>
                                 <div class="row mb-1">
                                     <div class="col-6">
                                         <label for="address" class="form-label label-sm">Address</label>
-                                        <input type="text" id="address" class="form-control" v-model="user.address" readonly />
+                                        <input type="text" id="address" class="form-control" v-model="user.address"
+                                            readonly />
                                     </div>
                                     <div class="col-6">
                                         <label for="contact" class="form-label label-sm">Contact Number</label>
-                                        <input type="text" id="contact" class="form-control" v-model="user.contact" readonly />
+                                        <input type="text" id="contact" class="form-control" v-model="user.contact"
+                                            readonly />
                                     </div>
                                 </div>
                             </div>
@@ -63,7 +67,8 @@
                                     </div>
 
                                     <div class="col-4">
-                                        <label class="form-label label-sm">Half Day? <strong style="color: red">*</strong></label>
+                                        <label class="form-label label-sm">Half Day? <strong
+                                                style="color: red">*</strong></label>
                                         <select v-model="leaveForm.half_day" class="form-select">
                                             <option value="">No</option>
                                             <option value="morning">Yes - Morning</option>
@@ -73,7 +78,8 @@
 
                                     <div class="col-2">
                                         <label class="form-label label-sm">Total Days</label>
-                                        <input type="text" class="form-control leave_days" :value="leaveForm.total_leave_days" readonly />
+                                        <input type="text" class="form-control leave_days"
+                                            :value="leaveForm.total_leave_days" readonly />
                                     </div>
                                 </div>
 
@@ -83,13 +89,15 @@
                                         <label for="date_from" class="form-label label-sm">
                                             Date of Leave From <strong style="color: red">*</strong>
                                         </label>
-                                        <input type="date" id="date_from" class="form-control" v-model="leaveForm.date_from" required />
+                                        <input type="date" id="date_from" class="form-control"
+                                            v-model="leaveForm.date_from" required :max="maxDateForLeave" />
                                     </div>
                                     <div class="col-6">
                                         <label for="date_to" class="form-label label-sm">
                                             Date of Leave To <strong style="color: red">*</strong>
                                         </label>
-                                        <input type="date" id="date_to" class="form-control" v-model="leaveForm.date_to" required />
+                                        <input type="date" id="date_to" class="form-control" v-model="leaveForm.date_to"
+                                            :max="maxDateForLeave" required />
                                     </div>
                                 </div>
 
@@ -98,7 +106,8 @@
                                         <label for="leave_reason" class="form-label label-sm">
                                             Reason for leave <strong style="color: red">*</strong>
                                         </label>
-                                        <textarea class="form-control" rows="1" id="leave_reason" v-model="leaveForm.leave_reason" required></textarea>
+                                        <textarea class="form-control" rows="1" id="leave_reason"
+                                            v-model="leaveForm.leave_reason" required></textarea>
                                     </div>
                                 </div>
                             </div>
@@ -137,7 +146,7 @@ export default {
                 total_leave_days: "",
                 leave_reason: "",
                 half_day: "",
-                approver: "", 
+                approver: "",
                 status: "",
             },
         };
@@ -146,6 +155,16 @@ export default {
         fullName() {
             return `${this.user.first_name} ${this.user.last_name}`.trim();
         },
+        maxDateForLeave() {
+        if (this.selectedTypeofLeave === 'SL') {
+            const today = new Date();
+            const y = today.getFullYear();
+            const m = String(today.getMonth() + 1).padStart(2, '0');
+            const d = String(today.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
+        }
+        return null;
+    }
     },
     watch: {
         'leaveForm.date_from': 'calculateTotalLeaveDays',
@@ -160,64 +179,96 @@ export default {
             this.leaveForm.date_to = "";
             this.leaveForm.total_leave_days = "";
             this.leaveForm.leave_reason = "";
-            this.leaveForm.approver = ""; 
-            this.leaveForm.status = ""; 
+            this.leaveForm.approver = "";
+            this.leaveForm.status = "";
 
             this.$emit("close");
         },
 
-calculateTotalLeaveDays() {
-    const from = this.leaveForm.date_from;
-    const to = this.leaveForm.date_to;
-    const halfDay = this.leaveForm.half_day;
 
-    // Ensure the date_to is the same as date_from for half-day
-    if (halfDay && from !== to) {
-        this.leaveForm.date_to = from; // Force date_to to be the same as date_from
-    }
+        calculateTotalLeaveDays() {
+            const from = this.leaveForm.date_from;
+            const to = this.leaveForm.date_to;
+            const halfDay = this.leaveForm.half_day;
 
-    if (!from || !to) {
-        this.leaveForm.total_leave_days = '';
-        return;
-    }
+            if (!from || !to) {
+                this.leaveForm.total_leave_days = '';
+                return;
+            }
 
-    const start = new Date(from);
-    const end = new Date(to);
+            const start = new Date(from);
+            const end = new Date(to);
 
-    if (isNaN(start) || isNaN(end) || end < start) {
-        this.leaveForm.total_leave_days = '';
-        return;
-    }
+            const today = new Date();
+            const todayOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+            const startOnly = new Date(start.getFullYear(), start.getMonth(), start.getDate());
 
-    // Convert dates to the beginning of the day to avoid time issues
-    const msPerDay = 1000 * 60 * 60 * 24;
-    const startDate = new Date(start.getFullYear(), start.getMonth(), start.getDate());
-    const endDate = new Date(end.getFullYear(), end.getMonth(), end.getDate());
+            // revent TO < FROM
+            if (end < start) {
+                Swal.fire(
+                    "Invalid Date Range",
+                    "'Date To' cannot be earlier than 'Date From'.",
+                    "warning"
+                );
+                this.leaveForm.date_to = "";
+                this.leaveForm.total_leave_days = "";
+                return;
+            }
 
-    let diffDays = Math.floor((endDate - startDate) / msPerDay) + 1;
+            //  SL cannot be future date AND cannot be today
+            if (this.selectedTypeofLeave === "SL") {
+                if (startOnly.getTime() > todayOnly.getTime()) {
+                    Swal.fire(
+                        "Not Allowed",
+                        "Sick Leave (SL) cannot be filed for future dates.",
+                        "warning"
+                    );
+                    this.leaveForm.date_from = "";
+                    this.leaveForm.date_to = "";
+                    this.leaveForm.total_leave_days = "";
+                    return;
+                }
 
-    // Exclude weekends (Saturday and Sunday)
-    let weekendCount = 0;
-    for (let current = new Date(startDate); current <= endDate; current.setDate(current.getDate() + 1)) {
-        const dayOfWeek = current.getDay(); // 0 is Sunday, 6 is Saturday
-        if (dayOfWeek === 0 || dayOfWeek === 6) {
-            weekendCount++;
-        }
-    }
+                if (startOnly.getTime() === todayOnly.getTime()) {
+                    Swal.fire(
+                        "Warning",
+                        "You cannot schedule Sick Leave (SL) dated today. SL is only for absences already incurred.",
+                        "warning"
+                    );
+                    this.leaveForm.date_from = "";
+                    this.leaveForm.date_to = "";
+                    this.leaveForm.total_leave_days = "";
+                    return;
+                }
+            }
 
-    diffDays -= weekendCount; // Subtract weekends from the total days
+            // Enforce half-day rule
+            if (halfDay && from !== to) {
+                this.leaveForm.date_to = from;
+            }
 
-    // Apply half-day rule
-    if (halfDay) {
-        if (diffDays === 1) {
-            diffDays = 0.5; // If only one day, it's a half-day leave
-        } else {
-            diffDays -= 0.5; // Otherwise, subtract half a day
-        }
-    }
+            // Convert dates to start of day
+            const msPerDay = 1000 * 60 * 60 * 24;
+            const startDate = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+            const endDate = new Date(end.getFullYear(), end.getMonth(), end.getDate());
 
-    this.leaveForm.total_leave_days = diffDays;
-},
+            let diffDays = Math.floor((endDate - startDate) / msPerDay) + 1;
+
+
+            let weekendCount = 0;
+            for (let current = new Date(startDate); current <= endDate; current.setDate(current.getDate() + 1)) {
+                const dayOfWeek = current.getDay();
+                if (dayOfWeek === 0 || dayOfWeek === 6) weekendCount++;
+            }
+            diffDays -= weekendCount;
+
+
+            if (halfDay) {
+                diffDays = diffDays <= 1 ? 0.5 : diffDays - 0.5;
+            }
+
+            this.leaveForm.total_leave_days = diffDays;
+        },
 
 
         submitForm() {
@@ -238,6 +289,25 @@ calculateTotalLeaveDays() {
                     return;
                 }
             }
+
+            // SL cannot be a future date
+            if (this.selectedTypeofLeave === 'SL') {
+                const start = new Date(this.leaveForm.date_from);
+                const now = new Date();
+
+                const startDay = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+                const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+                if (startDay.getTime() > today.getTime()) {
+                    Swal.fire(
+                        "Not allowed",
+                        "Sick Leave (SL) cannot be filed for a future date.",
+                        "warning"
+                    );
+                    return;
+                }
+            }
+
 
             const formData = {
                 selectedTypeofLeave: this.selectedTypeofLeave,

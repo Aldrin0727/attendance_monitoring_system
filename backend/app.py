@@ -29,11 +29,12 @@ logging.basicConfig(level=logging.INFO)
 from models.Leaves import leave_bp
 from models.user import users_bp
 from models.attendance import attendance_bp
+from models.ot_ob import ot_ob_bp
 
 app.register_blueprint(leave_bp)
 app.register_blueprint(users_bp)
 app.register_blueprint(attendance_bp)
-
+app.register_blueprint(ot_ob_bp)
 
 def get_db():
     if 'db' not in g:

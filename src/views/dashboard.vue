@@ -10,13 +10,45 @@
   </div>
   <hr class="mt-0 mb-3">
 
-  <!-- Button for filing leave -->
   <div class="row mt-3">
-    <div class="col-lg-12 text-end">
+
+    <!-- DH Pending Button (full width) -->
+    <div class="col-lg-3" v-if="user.job_title === 'Department Head'">
+      <div class="btn btn-info d-flex justify-content-between align-items-center"
+        @click.prevent="goToLeaveRequests('FOR DEPARTMENT HEAD APPROVAL', user.job_title)" style="cursor: pointer;">
+        <div class="d-flex align-items-center">
+          <font-awesome-icon :icon="['fas', 'user-check']" class="me-2" />
+          <span class="fw-bold">Pending for Leave Approval</span>
+        </div>
+
+        <span class="badge text-white fw-bold" style="background-color: #164370;">
+          {{ for_dept_head ?? 0 }}
+        </span>
+      </div>
+    </div>
+
+    <div class="col-lg-3" v-if="user.job_title === 'Department Head'">
+      <div class="btn btn-info d-flex justify-content-between align-items-center"
+        @click.prevent="goTo_OB_OTRequests('FOR DEPARTMENT HEAD APPROVAL', user.job_title)" style="cursor: pointer;">
+        <div class="d-flex align-items-center">
+          <font-awesome-icon :icon="['fas', 'user-check']" class="me-2" style="color: #219ebc" />
+          <span class="fw-bold" style="color: #219ebc">Pending for OT/OB Approval</span>
+        </div>
+
+        <span class="badge text-white fw-bold" style="background-color: #219ebc;">
+          {{ for_dept_head_approval_pending_ob_ot ?? 0 }}
+        </span>
+      </div>
+    </div>
+
+
+    <!-- File a Leave Button (right aligned) -->
+    <div class="col-lg-6 text-end">
       <button class="btn btn-secondary" @click="file_leave_btn">
-        <font-awesome-icon :icon="['fas', 'circle-plus']" class="me-2" /> File a Leave
+        <font-awesome-icon :icon="['fas', 'circle-plus']" class="" /> File a Leave
       </button>
     </div>
+
   </div>
 
   <div class="row mt-1 g-3">
@@ -97,11 +129,9 @@
 
       </div>
 
-
-      <!-- Custom Card for Security Check -->
       <div class="custom-card p-3 mb-4 mt-3">
         <h5 class="card-title d-flex justify-content-between align-items-center">
-          PENDING
+          PENDING FOR DEPARTMENT HEAD APPROVAL
         </h5>
 
 
@@ -110,7 +140,7 @@
             <font-awesome-icon :icon="['fas', 'hourglass-half']" class="font-awesome-icon" style="color:#edc55b" />
             <div class="text-end">
               <h3 class="fw-bold mb-0">{{ for_dept_head_approval_pending ?? 0 }}</h3>
-              <span class="text-muted">Pending for Department Head Approval</span>
+              <span class="text-muted">Leave</span>
             </div>
           </div>
           <div class="card-footer py-1 px-2">
@@ -122,7 +152,24 @@
           </div>
         </div>
 
-        <div class="card h-100 mt-3" v-if="user.job_title == 'Department Head'">
+        <div class="card h-100 mt-3">
+          <div class="card-body has-fav-padding d-flex justify-content-between align-items-center">
+            <font-awesome-icon :icon="['fas', 'clock']" class="font-awesome-icon" style="color:#2a9d8f" />
+            <div class="text-end">
+              <h3 class="fw-bold mb-0">{{ for_dept_head_approval_pending_ob_ot_user ?? 0 }}</h3>
+              <span class="text-muted">OB/OT</span>
+            </div>
+          </div>
+          <div class="card-footer py-1 px-2">
+            <a href="#" class="text-white d-flex justify-content-between align-items-center m-0"
+              style="text-decoration:none;" @click.prevent="goToLeaveRequests('FOR DEPARTMENT HEAD APPROVAL', '')">
+              <span>View Details</span>
+              <i class="fas fa-arrow-right"></i>
+            </a>
+          </div>
+        </div>
+
+        <!-- <div class="card h-100 mt-3" v-if="user.job_title == 'Department Head'">
           <div class="card-body has-fav-padding d-flex justify-content-between align-items-center">
             <font-awesome-icon :icon="['fas', 'user-check']" class="font-awesome-icon" style="color:#0dcaf0" />
             <div class="text-end">
@@ -138,7 +185,7 @@
               <i class="fas fa-arrow-right"></i>
             </a>
           </div>
-        </div>
+        </div> -->
 
 
 
@@ -163,7 +210,7 @@ import bootstrap5Plugin from '@fullcalendar/bootstrap5';
 import 'bootstrap/dist/css/bootstrap.css';
 import 'bootstrap-icons/font/bootstrap-icons.css';
 import file_leave_modal from '@/components/modals/file_leave_modal.vue';
-import { leave_type_Colors } from '@/utils/badge_colors';
+import { leave_type_Colors, ob_ot_Colors } from '@/utils/badge_colors';
 // leave_type_Colors
 
 export default {
@@ -183,6 +230,8 @@ export default {
       sl_used: 0,
 
       for_dept_head_approval_pending: 0,
+      for_dept_head_approval_pending_ob_ot: 0,
+      for_dept_head_approval_pending_ob_ot_user: 0,
       for_dept_head: 0,
 
       leaveEvents: [],
@@ -204,11 +253,19 @@ export default {
   },
   mounted() {
     this.fetchForApprovalCount();
+    // this.fetchOBOTEvents();
     this.fetchLeaveEvents();
+    this.fetchForApprovalCountOB_OT();
+  
+
+    this.refreshInterval = setInterval(() => {
+      this.refreshDashboard();
+    }, 180000); //ms
+
   },
   watch: {
     leaveEvents(newEvents) {
-      this.calendarOptions.events = newEvents;  
+      this.calendarOptions.events = newEvents;
     }
   },
 
@@ -240,10 +297,41 @@ export default {
   },
 
   methods: {
+    refreshDashboard() {
+      // this.fetchOBOTEvents();
+      this.fetchForApprovalCount();
+      this.fetchLeaveEvents();
+      this.fetchForApprovalCountOB_OT();
+
+      console.log("Dashboard refreshed automatically.");
+    },
+
+    getStatusLetter(status) {
+      switch (status) {
+        case "FOR DEPARTMENT HEAD APPROVAL":
+          return " (F)";
+        case "APPROVED":
+          return "(A)";
+        case "DENIED":
+          return "(D)";
+        default:
+          return "";
+      }
+    },
+
     goToLeaveRequests(status, job_title) {
 
       this.$router.push({
         name: 'LeaveRequests',
+        query: {
+          status: status, job_title: job_title
+        }
+      });
+
+    },
+    goTo_OB_OTRequests(status, job_title) {
+      this.$router.push({
+        name: 'OB_OT',
         query: {
           status: status, job_title: job_title
         }
@@ -260,9 +348,65 @@ export default {
       this.is_file_leave_modal_visible = false;
     },
 
-    handleDateClick() {
-      alert('You clicked on: ')
+    handleDateClick(info) {
+      const clickedDate = info.dateStr;
+
+      // Filter all events for the clicked date
+      const eventsForDay = this.leaveEvents.filter(ev => {
+        const eventDate = new Date(ev.date).toISOString().slice(0, 10);
+        return eventDate === clickedDate;
+      });
+
+      if (eventsForDay.length === 0) {
+        Swal.fire({
+          icon: "info",
+          title: "No Schedule",
+          text: `No leave or OB/OT scheduled for ${clickedDate}.`,
+          confirmButtonColor: "#4a90e2"
+        });
+        return;
+      }
+      const eventListHTML = eventsForDay
+        .map(ev => {
+          const color =
+              ev.title.includes("SL") ? "#edc55b" :
+              ev.title.includes("VL") ? "#fb6f92" :
+              ev.title.includes("EL") ? "#80e183dc" :
+              ev.title.includes("OB") ? "#b889f2" :
+              ev.title.includes("OT") ? "#50a6c0" :
+              "#ccc";
+
+          return `
+        <div style="
+            background: #fafafa;
+            padding: 10px 14px;
+            margin-bottom: 8px;
+            border-radius: 10px;
+            border-left: 5px solid ${color};
+            box-shadow: box-shadow: rgba(0, 0, 0, 0.24) 0px 3px 8px;
+        ">
+          <span style="font-weight: 600;">${ev.title}</span>
+        </div>
+      `;
+        })
+        .join("");
+
+      Swal.fire({
+        title: `<span style="font-size: 20px;">📅 Schedule for <b>${clickedDate}</b></span>`,
+        html: `
+      <div style="text-align: left; padding: 5px;">
+        ${eventListHTML}
+      </div>
+    `,
+        width: 480,
+        background: "#ffffff",
+        confirmButtonText: "Close",
+        confirmButtonColor: "#4a90e2",
+
+      });
     },
+
+
 
     customEventRendering(info) {
       const event = info.event;
@@ -274,8 +418,38 @@ export default {
       return { domNodes: [customContent] };
     },
 
-    fetchForApprovalCount() {
+    fetchForApprovalCountOB_OT() {
+      fetch(`${API_BASE}/otob_approval_count`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fullName: `${this.user.first_name} ${this.user.last_name}`,
+          job_title: this.user.job_title,
+          department: this.user.dept_code,
+        })
+      })
+        .then(res => res.json())
+        .then(data => {
+          // console.log(data)
+          if (data.success) {
 
+            this.for_dept_head_approval_pending_ob_ot = data.app_count || 0;
+            this.for_dept_head_approval_pending_ob_ot_user = data.user_count || 0;
+            // console.log(data)
+            // this.for_dept_head = data.app_count || 0;
+
+            // this.vl_used = data.used_vl || 0;
+            // this.sl_used = data.used_sl || 0;
+          } else {
+            console.error('for_approval_count error:', data.error);
+          }
+        })
+        .catch(err => {
+          console.error("Error fetching department head ticket statuses:", err);
+        });
+    },
+
+    fetchForApprovalCount() {
       fetch(`${API_BASE}/for_approval_count`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -303,44 +477,77 @@ export default {
         });
     },
 
-    fetchLeaveEvents() {
-      fetch(`${API_BASE}/date_calendar`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          dept_code: this.user.dept_code,
-        })
-      })
-        .then(res => res.json())
-        .then(data => {
-          if (data.success && data.dateall) {
+fetchLeaveEvents() {
+  fetch(`${API_BASE}/date_calendar`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      dept_code: this.user.dept_code,
+    }),
+  })
+    .then(res => res.json())
+    .then(data => {
+      if (!data.success) {
+        console.error("Error fetching combined calendar:", data.error);
+        return;
+      }
 
-            this.leaveEvents = data.dateall.map(dateall => {
-              const leave_type = dateall.leave_type;
-              const colorClass = leave_type_Colors[leave_type] || 'badge default-class';
-              const formattedDate = new Date(dateall.leave_from);
-              const year = formattedDate.getFullYear();
-              const month = (formattedDate.getMonth() + 1).toString().padStart(2, '0');  
-              const day = formattedDate.getDate().toString().padStart(2, '0');  
-              const formattedDateString = `${year}-${month}-${day}`; 
+      let events = [];
 
+      //LEAVES
+      (data.dateall || []).forEach(item => {
+        const start = new Date(item.leave_from);
+        const end = new Date(item.leave_to);
 
-              return {
-                title: `${dateall.leave_type} - ${dateall.user.split(' ')[0]}`,
-                date: formattedDate,
-                classNames: [colorClass], 
-              };
-            });
+        const colorClass = leave_type_Colors[item.leave_type] || "badge default-class";
+        const statusLetter = this.getStatusLetter(item.status);
+        const firstName = item.user?.split(" ")[0] || "User";
 
-            console.log('Mapped leaveEvents:', this.leaveEvents[1]);  
-          } else {
-            console.error('Error fetching leave events:', data.error);
-          }
-        })
-        .catch(err => {
-          console.error("Error fetching leave events:", err);
-        });
-    }
+        let current = new Date(start);
+
+        while (current <= end) {
+          events.push({
+            title: `${item.leave_type} - ${firstName} <b>${statusLetter}</b>`,
+            date: new Date(current),
+            classNames: [colorClass],
+            ref_no: item.ref_number
+          });
+
+          current.setDate(current.getDate() + 1);
+        }
+      });
+
+    
+      // OB/OT
+      (data.otoball || []).forEach(item => {
+        const start = new Date(item.req_from);
+        const end = new Date(item.req_to);
+
+        const colorClass = ob_ot_Colors[item.type] || "badge default-class";
+        const statusLetter = this.getStatusLetter(item.status);
+        const firstName = item.fullName?.split(" ")[0] || "User";
+
+        let current = new Date(start);
+
+        while (current <= end) {
+          events.push({
+            title: `${item.type} - ${firstName} <b>${statusLetter}</b>`,
+            date: new Date(current),
+            classNames: [colorClass],
+            ref_no: item.ref_number
+          });
+
+          current.setDate(current.getDate() + 1);
+        }
+      });
+
+      this.leaveEvents = events;
+    })
+    .catch(err => {
+      console.error("Error fetching calendar events:", err);
+    });
+}
+
 
 
 
@@ -360,7 +567,7 @@ export default {
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(0, 0, 0, 0.5);  
+  background-color: rgba(0, 0, 0, 0.5);
   display: flex;
   justify-content: center;
   align-items: start;
@@ -371,10 +578,10 @@ export default {
   width: 120%;
   margin: 40px;
   position: relative;
-  top: 0; 
+  top: 0;
   max-width: 800px !important;
   background-color: #fff;
-  border-radius: 8px; 
+  border-radius: 8px;
 }
 
 

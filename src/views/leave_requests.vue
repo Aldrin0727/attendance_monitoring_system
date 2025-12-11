@@ -82,6 +82,8 @@ export default {
             is_modal_visible: false,
 
             columns: [
+                { title: 'Employee ID', data: 'emp_id' },
+                { title: 'Employee Name', data: 'user' },
                 { title: 'Type', data: 'leave_type',
                      render: function (data) {
                         const statusClass = leave_type_Colors[data] || 'badge bg-secondary text-white fw-normal';
@@ -144,6 +146,7 @@ export default {
     },
     methods: {
       
+   
 
         fetchUserLeaveRequests() {
             const payload = {
@@ -179,6 +182,7 @@ export default {
             const selectedRequest = this.leaveRequests.find(req => req.id === leaveRequestId);
             this.selectedLeaveRequest = selectedRequest;
             this.is_modal_visible = true;
+            // console.log(selectedRequest)
         },
 
         handleDataTableUpdate() {

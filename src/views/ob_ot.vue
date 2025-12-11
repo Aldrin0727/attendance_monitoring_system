@@ -2,124 +2,130 @@
     <div>
         <!-- Header -->
         <div class="row">
-            <!-- Dashboard Header -->
             <div class="col-lg-12 d-flex justify-content-between align-items-center">
                 <h2>OB/OT Lists</h2>
-                <div class="d-flex align-items-center">
-                    <datetime />
-                </div>
+                <datetime />
             </div>
         </div>
         <hr class="mt-0 mb-3">
 
-
-
-
-
+        <!-- Top Row -->
         <div class="row mt-3">
 
-            <div class="col-lg-3">
-                <div class="d-flex justify-content-between align-items-center">
-                    <!-- Leave Status Dropdown -->
-                    <!-- <select v-model="selectedStatus" class="form-select me-2" @change="fetchUserLeaveRequests">
-                        <option value="" disabled>Select Status</option>
-                        <option value="FOR DEPARTMENT HEAD APPROVAL">Pending</option>
-                        <option value="APPROVED">Approved</option>
-                        <option value="DENIED">Denied</option>
-                    </select>    -->
-              
-                </div>
-            </div>
+            <div class="col-lg-3"></div>
+
             <div class="col-lg-9 d-flex justify-content-end align-items-center">
                 <button class="btn btn-secondary ob_ot" @click="file_leave_btn">
-                    <font-awesome-icon :icon="['fas', 'circle-plus']" class="me-2" /> File an OT/OB
+                    <font-awesome-icon :icon="['fas', 'circle-plus']" class="me-2" />
+                    File an OT/OB
                 </button>
-
             </div>
         </div>
-
-
 
         <!-- DataTable -->
         <div class="card p-4 mt-3">
-            <DataTable v-if="leaveRequests.length" :key="datatableKey"
-                class="table table-striped table-bordered display custom-table" :columns="columns" :data="leaveRequests"
-                :options="datatableOptions" />
+            <DataTable v-if="ob_ot_Requests.length" :key="datatableKey"
+                class="table table-striped table-bordered display custom-table" :columns="columns"
+                :data="ob_ot_Requests" :options="datatableOptions" />
         </div>
     </div>
 
-     <file_ob_ot v-if="is_file_ob_ot_modal_visible" :isVisible="is_file_ob_ot_modal_visible"
-    @close="close_file_ob_ot_modal" />
+    <!-- File OB/OT Modal -->
+    <file_ob_ot v-if="is_file_ob_ot_modal_visible" :isVisible="is_file_ob_ot_modal_visible"
+        @close="close_file_ob_ot_modal" />
 
+    <!-- Approval Modal -->
+    <ob_ot_approval v-if="is_modal_visible" :isVisible="is_modal_visible" :ob_ot_Request="selectedRequestOBOT"
+        @close="closeModal" @updateDataTable="fetchUserOBOTRequests" />
 </template>
 
 <script>
 import DataTable from 'datatables.net-vue3';
 import DataTablesLib from 'datatables.net';
 import datetime from '@/components/datetime.vue';
-import { getUserData } from '@/utils/get_user_data'
+import { getUserData } from '@/utils/get_user_data';
 import API_BASE from '@/utils/api_config';
-import { statusColors, leave_type_Colors } from '@/utils/badge_colors';
+import { statusColors, ob_ot_Colors } from '@/utils/badge_colors';
 import file_ob_ot from '@/components/modals/file_ob_ot.vue';
-
+import ob_ot_approval from '@/components/modals/ob_ot_approval.vue';
 
 DataTable.use(DataTablesLib);
 
 export default {
+    props: ["status", "job_title"],
     components: {
         datetime,
         DataTable,
-        file_ob_ot
+        file_ob_ot,
+        ob_ot_approval
     },
+
     data() {
         return {
             user: getUserData() || {},
-            leaveRequests: [],
+
+            ob_ot_Requests: [],
             datatableKey: 0,
+
             is_file_ob_ot_modal_visible: false,
+            is_modal_visible: false,
+
+            selectedStatus: "",
+            selectedRequestOBOT: null,
 
             columns: [
+                { title: "Employee ID", data: "emp_id" },
+                { title: "Employee Name", data: "fullName" },
                 {
-                    title: 'Type', data: 'leave_type',
-                    render: function (data) {
-                        const statusClass = leave_type_Colors[data] || 'badge bg-secondary text-white fw-normal';
+                    title: "Type",
+                    data: "type",
+                    render(data) {
+                        const statusClass = ob_ot_Colors[data] || "badge bg-secondary";
                         return `<span class="${statusClass}">${data}</span>`;
                     }
                 },
                 {
-                    title: 'Date From', data: 'leave_from',
-                    render: function (data) {
-                        if (!data) return ' ';
-                        return new Date(data).toISOString().slice(0, 10);
-                    }
-                },
-                {
-                    title: 'Date To', data: 'leave_to', render: function (data) {
-                        if (!data) return ' ';
-                        return new Date(data).toISOString().slice(0, 10);
-                    }
-                },
-                { title: 'Total Days', data: 'leave_number' },
-                {
-                    title: 'Date Submitted', data: 'date_created',
-                    render: function (data) {
-                        return new Date(data).toISOString().slice(0, 19).replace("T", " ");
-                    }
-                },
-                {
-                    title: 'Status', data: 'status',
-                    render: function (data) {
-                        const statusClass = statusColors[data] || 'badge bg-secondary text-white fw-normal';
+                    title: "Category",
+                    data: "category",
+                    render(data) {
+                        const statusClass = ob_ot_Colors[data] || "badge bg-secondary";
                         return `<span class="${statusClass}">${data}</span>`;
                     }
                 },
                 {
-                    title: 'Action', data: null,
-                    render: (data) => {
-                        return `<button class="btn btn-secondary btn-sm view-leave-req" style="font-size: 12px !important" data-id="${data.id}"><i class="fas fa-eye"></i>&nbsp;View</button>`;
+                    title: "Requested Date From",
+                    data: "req_from",
+                    render(data) {
+                        return data ? new Date(data).toISOString().slice(0, 10) : "";
                     }
-                }
+                },
+                {
+                    title: "Requested Date To",
+                    data: "req_to",
+                    render(data) {
+                        return data ? new Date(data).toISOString().slice(0, 10) : "";
+                    }
+                },
+                {
+                    title: "Status",
+                    data: "status",
+                    render(data) {
+                        const statusClass = statusColors[data] || "badge bg-secondary";
+                        return `<span class="${statusClass}">${data}</span>`;
+                    }
+                },
+                {
+                    title: "Action",
+                    data: null,
+                    render(row) {
+                        return `
+        <button class="btn btn-secondary btn-sm view-ob_ot-req" 
+            data-id="${row.otob_id}">
+            <i class="fas fa-eye"></i> View
+        </button>`;
+                    }
 
+                }
             ],
 
             datatableOptions: {
@@ -127,28 +133,70 @@ export default {
                 searching: true,
                 ordering: true,
                 responsive: true,
-                order: [[5, 'desc']],
-            },
+                order: [[4, "desc"]], // sort by date_from
+            }
         };
     },
-    methods: {
 
+    mounted() {
+        this.fetchUserOBOTRequests();
+
+        // bind click event for buttons created by DataTables
+        this.$nextTick(() => {
+            $(document).on("click", ".view-ob_ot-req", (event) => {
+                const id = $(event.currentTarget).data("id");
+                this.openModal(id);
+            });
+        });
+    },
+
+    methods: {
         file_leave_btn() {
             this.is_file_ob_ot_modal_visible = true;
-            console.log('open modal')
         },
 
-      
         close_file_ob_ot_modal() {
             this.is_file_ob_ot_modal_visible = false;
-            // console.log('Modal closed:', this.is_modal_visible);
+        },
+
+        closeModal() {
+            this.is_modal_visible = false;
+        },
+
+        fetchUserOBOTRequests() {
+            const payload = {
+                status: this.selectedStatus || this.status || "",
+                job_title: this.job_title || "",
+                department: this.user.dept_code,
+                emp_id: this.user.emp_id,
+            };
+
+            fetch(`${API_BASE}/get_otob_for_approval`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload),
+            })
+                .then((res) => res.json())
+                .then((data) => {
+                    this.ob_ot_Requests = data.forapp_list || [];
+                    // console.log(data)
+                    this.datatableKey++;
+                })
+                .catch((err) => console.error("Error fetching OB/OT list:", err));
+        },
+
+        openModal(id) {
+            const selectedOBOT = this.ob_ot_Requests.find(req => req.otob_id == id);
+            this.selectedRequestOBOT = selectedOBOT;
+
+            // console.log("Selected OB/OT:", selectedOBOT);
+
+            this.is_modal_visible = true;
         }
 
-    },
-    mounted() {
-   
+
     }
-}
+};
 </script>
 
 <style>
@@ -157,11 +205,12 @@ export default {
 @import url(../assets/css/buttons.css);
 @import url(../assets/css/modal.css);
 
-.ob_ot{
+.ob_ot {
     background-color: #df7a8a !important;
 }
 
-.ob_ot:focus, .ob_ot:hover{
-     background-color: #5ac5c5 !important;
+.ob_ot:hover,
+.ob_ot:focus {
+    background-color: #5ac5c5 !important;
 }
 </style>
