@@ -435,7 +435,7 @@ export default {
 
             this.for_dept_head_approval_pending_ob_ot = data.app_count || 0;
             this.for_dept_head_approval_pending_ob_ot_user = data.user_count || 0;
-  
+
           } else {
             console.error('for_approval_count error:', data.error);
           }
@@ -451,6 +451,7 @@ export default {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           fullName: `${this.user.first_name} ${this.user.last_name}`,
+          emp_id: this.user.emp_id,
           job_title: this.user.job_title,
           department: this.user.dept_code,
         })
@@ -473,6 +474,12 @@ export default {
         });
     },
 
+    isWeekend(d) {
+      const day = d.getDay(); // 0=Sun, 6=Sat
+      return day === 0 || day === 6;
+    },
+
+
     fetchLeaveEvents() {
       fetch(`${API_BASE}/date_calendar`, {
         method: "POST",
@@ -489,9 +496,14 @@ export default {
           }
 
           let events = [];
+          // helper (ilagay sa methods)
+
+
 
           //LEAVES
+          // LEAVES
           (data.dateall || []).forEach(item => {
+
             const start = new Date(item.leave_from);
             const end = new Date(item.leave_to);
 
@@ -501,7 +513,17 @@ export default {
 
             let current = new Date(start);
 
+            // normalize (para iwas timezone/offset issues)
+            current.setHours(0, 0, 0, 0);
+            end.setHours(0, 0, 0, 0);
+
             while (current <= end) {
+
+              if (["SL", "VL", "EL"].includes(item.leave_type) && this.isWeekend(current)) {
+                current.setDate(current.getDate() + 1);
+                continue;
+              }
+
               events.push({
                 title: `${item.leave_type} - ${firstName} <b>${statusLetter}</b>`,
                 date: new Date(current),
@@ -511,6 +533,7 @@ export default {
               current.setDate(current.getDate() + 1);
             }
           });
+
 
 
           // OB/OT

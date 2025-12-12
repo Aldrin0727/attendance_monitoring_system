@@ -84,6 +84,7 @@ def get_count_approval():
         username = data.get("fullName")
         position = data.get("job_title")
         department = data.get("department")
+        emp_id = data.get("emp_id")
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
 
        
@@ -102,32 +103,30 @@ def get_count_approval():
             app_qry ="""
             SELECT count(*) as app_count 
             from Leave_Details 
-            where user = %s 
+            where emp_id = %s 
             and status = 'FOR DEPARTMENT HEAD APPROVAL'
               """
-            params = (username,)
+            params = (emp_id,)
             
         cursor.execute(app_qry,params)
         app_count = cursor.fetchone()["app_count"]
       
         cursor.execute("""
-            SELECT count(*) as fapp_count from Leave_Details where user = %s and status = 'FOR DEPARTMENT HEAD APPROVAL'
-        """, (username,))  
+            SELECT count(*) as fapp_count from Leave_Details where emp_id = %s and status = 'FOR DEPARTMENT HEAD APPROVAL'
+        """, (emp_id,))  
         fapp_count = cursor.fetchone()["fapp_count"]
 
         cursor.execute("""
-            SELECT leave_number as used_vl from Leave_Details where user = %s and status = 'APPROVED' and (leave_type = 'VL' || leave_type = 'EL')
-        """, (username,))  
-        row = cursor.fetchone()
-        used_vl = row["used_vl"] if row and row["used_vl"] is not None else 0
-
+            SELECT COALESCE(SUM(leave_number), 0) as used_vl from Leave_Details where emp_id = %s and status = 'APPROVED' and (leave_type = 'VL' || leave_type = 'EL')
+        """, (emp_id,))  
+        used_vl = cursor.fetchone()["used_vl"]
+ 
 
         cursor.execute("""
-            SELECT leave_number as used_sl from Leave_Details where user = %s and status = 'APPROVED' AND leave_type = 'SL'
-        """, (username,))  
-        row = cursor.fetchone()
-        used_sl = row["used_sl"] if row and row["used_sl"] is not None else 0
-        
+            SELECT COALESCE(SUM(leave_number), 0) as used_sl from Leave_Details where emp_id = %s and status = 'APPROVED' AND leave_type = 'SL'
+        """, (emp_id,))  
+        used_sl = cursor.fetchone()["used_sl"]
+
         cursor.close()
 
         return jsonify({

@@ -156,15 +156,15 @@ export default {
             return `${this.user.first_name} ${this.user.last_name}`.trim();
         },
         maxDateForLeave() {
-        if (this.selectedTypeofLeave === 'SL') {
-            const today = new Date();
-            const y = today.getFullYear();
-            const m = String(today.getMonth() + 1).padStart(2, '0');
-            const d = String(today.getDate()).padStart(2, '0');
-            return `${y}-${m}-${d}`;
+            if (this.selectedTypeofLeave === 'SL') {
+                const today = new Date();
+                const y = today.getFullYear();
+                const m = String(today.getMonth() + 1).padStart(2, '0');
+                const d = String(today.getDate()).padStart(2, '0');
+                return `${y}-${m}-${d}`;
+            }
+            return null;
         }
-        return null;
-    }
     },
     watch: {
         'leaveForm.date_from': 'calculateTotalLeaveDays',
@@ -184,6 +184,8 @@ export default {
 
             this.$emit("close");
         },
+
+       
 
 
         calculateTotalLeaveDays() {
@@ -268,11 +270,19 @@ export default {
             }
 
             this.leaveForm.total_leave_days = diffDays;
+
+
+
+
         },
 
 
         submitForm() {
-            // Ensure the user cannot submit with incorrect dates
+            if (!this.leaveForm.total_leave_days || Number(this.leaveForm.total_leave_days) <= 0) {
+                Swal.fire("Invalid", "No valid leave days selected (weekends are excluded).", "warning");
+                return;
+            }
+
             if (this.selectedTypeofLeave === 'VL') {
                 const start = new Date(this.leaveForm.date_from);
                 const now = new Date();
@@ -307,7 +317,6 @@ export default {
                     return;
                 }
             }
-
 
             const formData = {
                 selectedTypeofLeave: this.selectedTypeofLeave,
