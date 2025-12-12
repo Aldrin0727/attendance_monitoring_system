@@ -116,13 +116,7 @@ def get_depthead():
 
 #         cursor.close()
 
-<<<<<<< HEAD
-#         return jsonify({"all_list":heads, "success": True}), 201
-#    except Exception as e:
-#         return jsonify({"error": str(e)}), 500
-=======
         return jsonify({"all_list":heads, "success": True}), 201
    except Exception as e:
         return jsonify({"error": str(e)}), 500
->>>>>>> main
 

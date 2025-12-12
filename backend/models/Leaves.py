@@ -23,13 +23,10 @@ def add_leave_details():
         # approver = 'test'
        
         year = datetime.now().year
-<<<<<<< HEAD
-=======
         if leave_type == 'SL':
             ref_var = 'SL'
         else:
             ref_var = 'VL'
->>>>>>> main
 
         # database insert
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
