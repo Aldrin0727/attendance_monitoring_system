@@ -137,7 +137,11 @@ export default {
                 total_leave_days: "",
                 leave_reason: "",
                 half_day: "",
+<<<<<<< HEAD
                 approver: "", 
+=======
+                approver: "",
+>>>>>>> main
                 status: "",
             },
         };
@@ -160,26 +164,42 @@ export default {
             this.leaveForm.date_to = "";
             this.leaveForm.total_leave_days = "";
             this.leaveForm.leave_reason = "";
+<<<<<<< HEAD
             this.leaveForm.approver = ""; 
             this.leaveForm.status = ""; 
+=======
+            this.leaveForm.approver = "";
+            this.leaveForm.status = "";
+>>>>>>> main
 
             this.$emit("close");
         },
 
+<<<<<<< HEAD
 calculateTotalLeaveDays() {
     const from = this.leaveForm.date_from;
     const to = this.leaveForm.date_to;
     const halfDay = this.leaveForm.half_day;
+=======
+       
+>>>>>>> main
 
     // Ensure the date_to is the same as date_from for half-day
     if (halfDay && from !== to) {
         this.leaveForm.date_to = from; // Force date_to to be the same as date_from
     }
 
+<<<<<<< HEAD
     if (!from || !to) {
         this.leaveForm.total_leave_days = '';
         return;
     }
+=======
+        calculateTotalLeaveDays() {
+            const from = this.leaveForm.date_from;
+            const to = this.leaveForm.date_to;
+            const halfDay = this.leaveForm.half_day;
+>>>>>>> main
 
     const start = new Date(from);
     const end = new Date(to);
@@ -189,12 +209,18 @@ calculateTotalLeaveDays() {
         return;
     }
 
+<<<<<<< HEAD
     // Convert dates to the beginning of the day to avoid time issues
     const msPerDay = 1000 * 60 * 60 * 24;
     const startDate = new Date(start.getFullYear(), start.getMonth(), start.getDate());
     const endDate = new Date(end.getFullYear(), end.getMonth(), end.getDate());
 
     let diffDays = Math.floor((endDate - startDate) / msPerDay) + 1;
+=======
+            const today = new Date();
+            const todayOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+            const startOnly = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+>>>>>>> main
 
     // Exclude weekends (Saturday and Sunday)
     let weekendCount = 0;
@@ -216,12 +242,54 @@ calculateTotalLeaveDays() {
         }
     }
 
+<<<<<<< HEAD
     this.leaveForm.total_leave_days = diffDays;
 },
 
 
         submitForm() {
             // Ensure the user cannot submit with incorrect dates
+=======
+            // Enforce half-day rule
+            if (halfDay && from !== to) {
+                this.leaveForm.date_to = from;
+            }
+
+            // Convert dates to start of day
+            const msPerDay = 1000 * 60 * 60 * 24;
+            const startDate = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+            const endDate = new Date(end.getFullYear(), end.getMonth(), end.getDate());
+
+            let diffDays = Math.floor((endDate - startDate) / msPerDay) + 1;
+
+
+            let weekendCount = 0;
+            for (let current = new Date(startDate); current <= endDate; current.setDate(current.getDate() + 1)) {
+                const dayOfWeek = current.getDay();
+                if (dayOfWeek === 0 || dayOfWeek === 6) weekendCount++;
+            }
+            diffDays -= weekendCount;
+
+
+            if (halfDay) {
+                diffDays = diffDays <= 1 ? 0.5 : diffDays - 0.5;
+            }
+
+            this.leaveForm.total_leave_days = diffDays;
+
+
+
+
+        },
+
+
+        submitForm() {
+            if (!this.leaveForm.total_leave_days || Number(this.leaveForm.total_leave_days) <= 0) {
+                Swal.fire("Invalid", "No valid leave days selected (weekends are excluded).", "warning");
+                return;
+            }
+
+>>>>>>> main
             if (this.selectedTypeofLeave === 'VL') {
                 const start = new Date(this.leaveForm.date_from);
                 const now = new Date();
@@ -271,6 +339,10 @@ calculateTotalLeaveDays() {
                     Swal.fire("Error", "Something went wrong", "error");
                 });
 
+<<<<<<< HEAD
+            // after successful submit, close modal
+=======
+>>>>>>> origin/lj_branch
             this.closeModal();
         }
     }
@@ -282,6 +354,10 @@ calculateTotalLeaveDays() {
 @import url(../../assets/css/buttons.css);
 @import url(../../assets/css/swal.css);
 @import url(../../../public/global.css);
+<<<<<<< HEAD
+=======
+
+>>>>>>> main
 
 .font-awesome-icon {
     color: #df7a8a !important;
