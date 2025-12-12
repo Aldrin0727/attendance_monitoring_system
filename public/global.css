@@ -1,3 +1,5 @@
+
+@import url(../src/assets/css/modal.css);
 :root {
   --dark: #114d70;
   --pastel-blue: #c8d8e4;
@@ -23,24 +25,31 @@ body,#app,html {
   .custom-green{
     background-color: #95d5b2 !important;
   }
+  .custom-green-3{
+    background-color: #80e183dc !important;
+  }
   .custom-yellow{
     background-color: #ffd60a !important;
   }
+  .custom-yellow-2{
+    background-color: #edc55b !important;
+  }
 
   .custom-info{
-    background-color: #00ff00 !important;
+    background-color: #50a6c0 !important;
   }
 
   .custom-red{
     background-color: #ff0000 !important;
   }
-  .custom-red-2{
+  .custom-red-2{ 
     background-color: #4a0404 !important;
   }
 
   .custom-blue{
     background-color: #219ebc !important;
   }
+  
   .custom-violet{
     background-color: #9e0059 !important;
   }
@@ -70,6 +79,6 @@ body,#app,html {
     background-color: #fb6f92 !important;
   }
   .custom-orange-2{
-    background-color: #9b5de5 !important;
+    background-color: #b889f2 !important;
   }
   
