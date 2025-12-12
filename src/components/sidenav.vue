@@ -13,13 +13,12 @@
                             </div>
                         </div>
 
-                        <!-- Name + Dept (itatago pag collapsed yung sidebar) -->
                         <div class="user-text" v-show="!isSidebarActive">
                             <div class="user-name">
                                 {{ user.fullName }}
                             </div>
                             <div class="user-dept">
-                                {{ user.department }}
+                                {{ user.dept_code }}
                             </div>
                         </div>
                     </div>
@@ -54,6 +53,13 @@
                         </a>
                     </li>
 
+                    <li :class="{ active: isActive('leave_requests') }">
+                        <a @click.prevent="navigate('leave_requests')">
+                            <i class="fas fa-computer"></i>
+                            <span v-show="!isSidebarActive">Leave Requests</span>
+                        </a>
+                    </li>
+
                     <li :class="{ active: isActive('ob_ot') }">
                         <a @click.prevent="navigate('ob_ot')">
                             <i class="fas fa-window-restore"></i>
@@ -85,6 +91,7 @@
 </template>
 
 <script>
+import { getUserData } from '@/utils/get_user_data';
 export default {
     name: "Sidenav",
     props: {
@@ -99,11 +106,11 @@ export default {
                 assignments: false,
                 parameters: false,
             },
-            user: null, 
+            user: getUserData() || {},
         };
     },
     computed: {
-  userInitials() {
+        userInitials() {
             const u = this.user || {};
             let fullName = "";
 
@@ -129,8 +136,7 @@ export default {
             const u = JSON.parse(stored);
             this.user = {
                 fullName: `${u.first_name} ${u.last_name}`,
-                department: u.department,
-                avatar: u.avatar || null, // kung may profile pic ka
+                dept_code: u.dept_code,
             };
         }
     },
@@ -190,8 +196,37 @@ export default {
 <style scoped>
 @import url(../assets/css/navbar.css);
 @import url(../assets/css/swal.css);
-@import url(../assets/css/buttons.css);
-@import url(../../public/global.css);
+@import url(../assets/css/inputbox.css);
+@import url(../assets/css/dataTable.css);
+
+
+
+
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: start;
+  z-index: 1050;
+}
+
+.modal-dialog {
+  max-width: 700px;
+  width: 100%;
+  margin: 20px;
+  position: relative;
+  top: 0;
+}
+
+label {
+  font-size: 14px;
+}
+
 
 
 .font-awesome-icon {
@@ -254,11 +289,10 @@ export default {
     margin-top: 2px;
 }
 
-.btn-secondary{
-      background-color: #4a8fe7;
-   border-radius: 9999px;
-   font-weight: 700;
-   letter-spacing: .06em;
+.btn-secondary {
+    background-color: #4a8fe7;
+    border-radius: 9999px;
+    font-weight: 700;
+    letter-spacing: .06em;
 }
-
 </style>
