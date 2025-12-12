@@ -31,19 +31,17 @@ def add_leave_details():
         # database insert
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
         cursor.execute("""
-            SELECT ref_no from Leave_Details
-            WHERE ref_no like %s
-            ORDER BY id DESC LIMIT 1
-        """,(ref_var + '%',)) 
+            SELECT MAX(ref_no) as ref from Leave_Details
+        """) 
         result = cursor.fetchone()
 
-        if result and result['ref_no']:
-            last_ref = result['ref_no']
-            ref_sequence = int(last_ref[-5:]) + 1
+        if result and result['ref']:
+            last_ref = result['ref']
+            ref_sequence = int(last_ref[-4:]) + 1
         else:
             ref_sequence = 1
 
-        newref_No = f"{ref_var}{year}{str(ref_sequence).zfill(5)}"
+        newref_No = f"{year}{str(ref_sequence).zfill(4)}"
 
         cursor.execute(
             "INSERT INTO Leave_Details (`user`,ref_no,leave_type,leave_number,leave_from,leave_to,leave_reason,date_created,department,status,emp_id) "
@@ -84,7 +82,6 @@ def get_count_approval():
         username = data.get("fullName")
         position = data.get("job_title")
         department = data.get("department")
-        emp_id = data.get("emp_id")
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
 
        
@@ -103,28 +100,27 @@ def get_count_approval():
             app_qry ="""
             SELECT count(*) as app_count 
             from Leave_Details 
-            where emp_id = %s 
+            where user = %s 
             and status = 'FOR DEPARTMENT HEAD APPROVAL'
               """
-            params = (emp_id,)
+            params = (username,)
             
         cursor.execute(app_qry,params)
         app_count = cursor.fetchone()["app_count"]
       
         cursor.execute("""
-            SELECT count(*) as fapp_count from Leave_Details where emp_id = %s and status = 'FOR DEPARTMENT HEAD APPROVAL'
-        """, (emp_id,))  
+            SELECT count(*) as fapp_count from Leave_Details where user = %s and status = 'FOR DEPARTMENT HEAD APPROVAL'
+        """, (username,))  
         fapp_count = cursor.fetchone()["fapp_count"]
 
         cursor.execute("""
-            SELECT COALESCE(SUM(leave_number), 0) as used_vl from Leave_Details where emp_id = %s and status = 'APPROVED' and (leave_type = 'VL' || leave_type = 'EL')
-        """, (emp_id,))  
+            SELECT count(*) as used_vl from Leave_Details where user = %s and status = 'APPROVED' and (leave_type = 'VL' || leave_type = 'EL')
+        """, (username,))  
         used_vl = cursor.fetchone()["used_vl"]
- 
 
         cursor.execute("""
-            SELECT COALESCE(SUM(leave_number), 0) as used_sl from Leave_Details where emp_id = %s and status = 'APPROVED' AND leave_type = 'SL'
-        """, (emp_id,))  
+            SELECT count(*) as used_sl from Leave_Details where user = %s and status = 'APPROVED' AND leave_type = 'SL'
+        """, (username,))  
         used_sl = cursor.fetchone()["used_sl"]
 
         cursor.close()
@@ -236,24 +232,14 @@ def update_approved__deny_leaves():
         username = data.get("user")
 
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
-        if args == "APPROVED" :
-            cursor.execute(
-                "UPDATE  Leave_Details set status = %s,approved_by = %s, date_approved = NOW() WHERE ref_no = %s",(args, username, ref_no))
-            
-            cursor.execute(
-                """INSERT INTO leave_history (module, ref_no, action, `user`, history_date) 
-                VALUES (%s, %s, %s, %s, NOW())""",
-                ('APPROVAL', ref_no, 'Approved Leave', username)
-            )
-        else:
-            cursor.execute(
-                "UPDATE  Leave_Details set status = %s WHERE ref_no = %s",(args, ref_no))
-            
-            cursor.execute(
-                """INSERT INTO leave_history (module, ref_no, action, `user`, history_date) 
-                VALUES (%s, %s, %s, %s, NOW())""",
-                ('APPROVAL', ref_no, 'Denied Leave', username)
-            )
+        cursor.execute(
+            "UPDATE  Leave_Details set status = %s,approved_by = %s, date_approved = NOW() WHERE ref_no = %s",(args, username, ref_no))
+        
+        cursor.execute(
+            """INSERT INTO leave_history (module, ref_no, action, `user`, history_date) 
+            VALUES (%s, %s, %s, %s, NOW())""",
+            ('APPROVAL', ref_no, 'Approved Leave', username)
+        )
         
         mysql.connection.commit()
         cursor.close()
@@ -274,16 +260,9 @@ def get_calendar_date():
         values = [department] 
         cursor.execute(date_qry, tuple(values))
         dateall = cursor.fetchall()
-
-        otob_qry = f"""
-                       SELECT * from ot_ob where department = %s"""
-        valuess = [department] 
-        cursor.execute(otob_qry, tuple(valuess))
-        otoball = cursor.fetchall()
-
         cursor.close()
 
-        return jsonify({"success": True,"dateall":dateall,"otoball":otoball}), 201
+        return jsonify({"success": True,"dateall":dateall}), 201
 
     except Exception as e:
         return jsonify({"error": str(e)}),500

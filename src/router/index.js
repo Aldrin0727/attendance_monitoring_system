@@ -34,10 +34,6 @@ const routes = [
     name: "OB_OT",
     component: () => import("../views/ob_ot.vue"),
     meta: { requiresAuth: true },
-     props: (route) => ({
-      status: route.query.status,
-      job_title: route.query.job_title,
-    }),
   },
 ];
 

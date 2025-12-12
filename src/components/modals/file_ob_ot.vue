@@ -5,7 +5,7 @@
                 <!-- Modal Header -->
                 <div class="modal-header py-1">
                     <font-awesome-icon :icon="['fas', 'circle-plus']" class="font-awesome-icon" />
-                    <h5 class="modal-title">Request Form</h5>
+                    <h5 class="modal-title">OB/OT Request Form</h5>
                     <button type="button" class="btn-close" @click="closeModal" aria-label="Close"></button>
                 </div>
 
@@ -67,7 +67,7 @@
                             <div class="row mb-0">
                                 <div class="col-6 mb-3">
                                     <label class="form-label label-sm">Category <strong style="color: red">*</strong></label>
-                                    <select v-model="ob_ot_form.selectedCategory" class="form-select" required>
+                                    <select v-model="selectedCategory" class="form-select" required>
                                         <option disabled value="">Select Category</option>
                                         <option value="Systems">Systems</option>
                                         <option value="Infrastructure">Infrastructure</option>
@@ -75,14 +75,7 @@
                                 </div>
                                  <div class="col-6">
                                     <label for="user" class="form-label label-sm">Destination<strong style="color: red">*</strong></label>
-                                    <!-- <input type="text" id="user" class="form-control" v-model="ob_ot_form.destination"/> -->
-                                       <select v-model="ob_ot_form.destination" class="form-select" required>
-                                        <option disabled value="">Select Category</option>
-                                        <option value="HO">Head Office</option>
-                                        <option value="Alveo">Alveo</option>
-                                        <option value="Farms">Shops</option>
-                                        <option value="Shops">Farms</option>
-                                    </select>
+                                    <input type="text" id="user" class="form-control" v-model="leaveForm.destination"/>
                                 </div>
                             </div>
 
@@ -91,13 +84,13 @@
                                     <label for="date_from" class="form-label label-sm">
                                        Requested Date From <strong style="color: red">*</strong>
                                     </label>
-                                    <input type="datetime-local" id="date_from" class="form-control" v-model="ob_ot_form.date_from" required />
+                                    <input type="datetime-local" id="date_from" class="form-control" v-model="leaveForm.date_from" required />
                                 </div>
                                 <div class="col-6">
                                     <label for="date_to" class="form-label label-sm">
                                         Requested Date To <strong style="color: red">*</strong>
                                     </label>
-                                    <input type="datetime-local" id="date_to" class="form-control" v-model="ob_ot_form.date_to" required />
+                                    <input type="datetime-local" id="date_to" class="form-control" v-model="leaveForm.date_to" required />
                                 </div>
                             </div>
 
@@ -106,14 +99,14 @@
                                     <label for="leave_reason" class="form-label label-sm">
                                         Reason for {{ selectedRequestType === 'OT' ? 'OT Request' : 'OB Request' }} <strong style="color: red">*</strong>
                                     </label>
-                                    <textarea class="form-control" rows="1" id="leave_reason" v-model="ob_ot_form.reason" required></textarea>
+                                    <textarea class="form-control" rows="1" id="leave_reason" v-model="leaveForm.leave_reason" required></textarea>
                                 </div>
                             </div>
                             <div class="row">
                                 <div class="col-12">
                                     <label for="leave_reason" class="form-label label-sm"> Project <strong style="color: red">*</strong>
                                     </label>
-                                    <textarea class="form-control" rows="1" id="leave_reason" v-model="ob_ot_form.project" required></textarea>
+                                    <textarea class="form-control" rows="1" id="leave_reason" v-model="leaveForm.leave_reason" required></textarea>
                                 </div>
                             </div>
                         </div>
@@ -147,13 +140,11 @@ export default {
         return {
             user: getUserData() || {},
             selectedRequestType: "",
-            ob_ot_form: {
-                destination: "",
+            leaveForm: {
                 date_from: "",
                 date_to: "",
-                reason: "",
+                leave_reason: "",
                 selectedCategory: "",
-                project: "",
             },
         };
     },
@@ -174,19 +165,16 @@ export default {
             }
 
             const formData = {
+                selectedRequestType: this.selectedRequestType,
+                fullName: this.fullName,
+                date_from: this.leaveForm.date_from,
+                date_to: this.leaveForm.date_to,
+                leave_reason: this.leaveForm.leave_reason,
+                selectedCategory: this.leaveForm.selectedCategory,
+                department_name: this.user.dept_code,
                 emp_id: this.user.emp_id,
-                fullName: `${this.user.first_name} ${this.user.last_name}`,
-                type: this.selectedRequestType,
-                category: this.ob_ot_form.selectedCategory,
-                req_from: this.ob_ot_form.date_from,
-                req_to: this.ob_ot_form.date_to,
-                reason: this.ob_ot_form.reason,
-                project: this.ob_ot_form.project,
-                department: this.user.dept_code,
-                destination: this.ob_ot_form.destination 
             };
 
-            // console.log(formData)
             // Send form data to backend API
             fetch(`${API_BASE}/create_ob_ot_request`, {
                 method: "POST",
@@ -199,7 +187,6 @@ export default {
                 .then(data => {
                     if (data.success) {
                         Swal.fire("Success", "Request filed successfully", "success");
-
                     } else {
                         Swal.fire("Error", data.error || "Failed to submit request", "error");
                     }

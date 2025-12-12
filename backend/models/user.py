@@ -77,6 +77,7 @@ def get_depthead():
    try:
         data = request.get_json()
 <<<<<<< HEAD
+<<<<<<< HEAD
         department = data.get("department_name")
 
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
@@ -93,6 +94,8 @@ def get_depthead():
    except Exception as e:
         return jsonify({"error": str(e)}), 
 =======
+=======
+>>>>>>> 7e5fea32e95b94dba8b4fc94edb4df7efbbd9889
         department = data.get("department")
 
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
@@ -113,28 +116,31 @@ def get_depthead():
    except Exception as e:
         return jsonify({"error": str(e)}), 500
    
-@users_bp.route('/get_user_info', methods=['POST'])
-def get_user_info():  
-   try:
-        data = request.get_json()
-        username = data.get("fullName")
+# @users_bp.route('/get_user_info', methods=['POST'])
+# def get_user_info():  
+#    try:
+#         data = request.get_json()
+#         username = data.get("fullName")
 
-        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
-        sql = f"""
-            SELECT *
-            FROM `{Config.MYSQL_DB2}`.users
-            WHERE CONCAT(first_name,' ',last_name) = %s
-            AND acc_status = 1
+#         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+#         sql = f"""
+#             SELECT *
+#             FROM `{Config.MYSQL_DB2}`.users
+#             WHERE CONCAT(first_name,' ',last_name) = %s
+#             AND acc_status = 1
 
-        """
+#         """
 
-        cursor.execute(sql, (username,))
-        heads = cursor.fetchall()
+#         cursor.execute(sql, (username,))
+#         heads = cursor.fetchall()
 
-        cursor.close()
+#         cursor.close()
 
         return jsonify({"all_list":heads, "success": True}), 201
    except Exception as e:
         return jsonify({"error": str(e)}), 500
+<<<<<<< HEAD
 >>>>>>> origin/lj_branch
+=======
+>>>>>>> 7e5fea32e95b94dba8b4fc94edb4df7efbbd9889
 

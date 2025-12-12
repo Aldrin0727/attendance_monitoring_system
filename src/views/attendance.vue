@@ -95,7 +95,7 @@ export default {
                     }
                 },
                 { title: 'Hours Worked', data: 'work_hours' },
-                {
+           {
                     title: 'Remarks',
                     data: 'remarks',
                     render: function (data) {
@@ -163,32 +163,8 @@ export default {
                 Swal.fire("Warning", "Please select a valid Time In.", "warning");
                 return;
             }
-
             const date = new Date(this.time_in);
             const formattedTimeIn = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')} ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}:${date.getSeconds().toString().padStart(2, '0')}`;
-
-            // Extract YYYY-MM-DD
-            const dateOnly = formattedTimeIn.slice(0, 10);
-
-            // Check if user already has Time In today
-            const existingTimeInToday = this.attendanceList.find(item => {
-                if (item.time_in) {
-                    const existing = new Date(item.time_in);
-                    const existingDateOnly = `${existing.getFullYear()}-${(existing.getMonth() + 1)
-                        .toString().padStart(2, '0')}-${existing.getDate().toString().padStart(2, '0')}`;
-                    return existingDateOnly === dateOnly;
-                }
-                return false;
-            });
-
-            if (existingTimeInToday) {
-                Swal.fire(
-                    "Not Allowed",
-                    "You already marked Time In today.",
-                    "warning"
-                );
-                return;
-            }
 
             const payload = {
                 emp_id: this.user.emp_id,
@@ -208,7 +184,7 @@ export default {
                 .then(data => {
                     if (data.success) {
                         Swal.fire("Success", "Time IN marked successfully", "success");
-                        this.time_in = '';
+                        this.time_in = ''
                         this.fetchUserAttendnce();
                     } else {
                         Swal.fire("Error", data.error || "Failed to submit attendance", "error");
@@ -220,48 +196,46 @@ export default {
                 });
         },
 
-
         markTimeOut() {
             if (!this.time_out) {
                 Swal.fire("Warning", "Please select a valid Time Out.", "warning");
                 return;
             }
 
+            // Get the selected Time Out date and format it as YYYY-MM-DD HH:mm:ss
             const timeOutDate = new Date(this.time_out);
             const formattedTimeOut = `${timeOutDate.getFullYear()}-${(timeOutDate.getMonth() + 1).toString().padStart(2, '0')}-${timeOutDate.getDate().toString().padStart(2, '0')} ${timeOutDate.getHours().toString().padStart(2, '0')}:${timeOutDate.getMinutes().toString().padStart(2, '0')}:${timeOutDate.getSeconds().toString().padStart(2, '0')}`;
 
-            const timeOutDateOnly = formattedTimeOut.slice(0, 10);
+            // Extract the date portion (YYYY-MM-DD) from the Time Out
+            const timeOutDateOnly = formattedTimeOut.slice(0, 10);  // "YYYY-MM-DD"
+            console.log('Time Out Date Only:', timeOutDateOnly);  // Log the formatted Time Out date for debugging
 
+            // Log the attendanceList to check its structure
+            console.log('Attendance List:', this.attendanceList);
+
+            // Check if a Time In has already been marked for the same date
             const timeInRecord = this.attendanceList.find(item => {
                 if (item.time_in) {
+                    // Parse the time_in string into a Date object
                     const timeInDate = new Date(item.time_in);
+                    // Format the date portion as YYYY-MM-DD
                     const timeInDateOnly = `${timeInDate.getFullYear()}-${(timeInDate.getMonth() + 1).toString().padStart(2, '0')}-${timeInDate.getDate().toString().padStart(2, '0')}`;
                     return timeInDateOnly === timeOutDateOnly;
                 }
                 return false;
             });
 
+            console.log('Time In Record:', timeInRecord);  // Log the found Time In record for debugging
+
             if (!timeInRecord) {
                 Swal.fire("Error", "You must mark Time In first before Time Out.", "error");
-                return;
-            }
-
-            // Time Out must not be earlier than Time In**
-            const timeInDateObj = new Date(timeInRecord.time_in);
-
-            if (timeOutDate < timeInDateObj) {
-                Swal.fire(
-                    "Invalid Time Out",
-                    "Time Out cannot be earlier than your Time In.",
-                    "warning"
-                );
                 return;
             }
 
             const payload = {
                 emp_id: this.user.emp_id,
                 fullName: `${this.user.first_name} ${this.user.last_name}`,
-                time_in: '',
+                time_in: '', // No need to send time_in for this request
                 time_out: formattedTimeOut,
                 args: 'TIME OUT'
             };
@@ -277,8 +251,8 @@ export default {
                 .then(data => {
                     if (data.success) {
                         Swal.fire("Success", "Time OUT marked successfully", "success");
-                        this.fetchUserAttendnce();
-                        this.time_out = "";
+                        this.fetchUserAttendnce();  // Re-fetch attendance data to update the table
+                        this.time_out = ''
                     } else {
                         Swal.fire("Error", data.error || "Failed to submit attendance", "error");
                     }
@@ -288,7 +262,6 @@ export default {
                     Swal.fire("Error", "Something went wrong", "error");
                 });
         }
-
 
 
 
