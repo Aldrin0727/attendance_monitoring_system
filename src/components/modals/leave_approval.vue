@@ -57,7 +57,8 @@
                                 <div class="col-2">
                                     <label class="form-label label-sm">Total Days</label>
                                     <input type="text" class="form-control leave_days"
-                                        v-model="leaveRequest.leave_number" readonly />
+                                        v-model="editableLeave.leave_number" readonly />
+
                                 </div>
                                 <div class="col-5">
                                     <label class="form-label label-sm">REFERENCE NUMBER</label>
@@ -67,18 +68,22 @@
                             <div class="row mb-3">
                                 <div class="col-6">
                                     <label class="form-label label-sm">Date of Leave From</label>
-                                     <input type="date" class="form-control" v-model="formattedLeaveFrom" readonly />
+                                    <input type="date" class="form-control" v-model="editableLeave.leave_from"
+                                        :readonly="!canUpdate" :min="originalLeaveFrom" />
                                 </div>
                                 <div class="col-6">
                                     <label class="form-label label-sm">Date of Leave To</label>
-                                    <input type="date" class="form-control" v-model="formattedLeaveTo" readonly />
+                                    <input type="date" class="form-control" v-model="editableLeave.leave_to"
+                                        :readonly="!canUpdate" />
                                 </div>
                             </div>
                             <div class="row">
                                 <div class="col-12">
                                     <label class="form-label label-sm">Reason for Leave</label>
+
                                     <textarea class="form-control" rows="1" v-model="leaveRequest.leave_reason"
-                                        readonly></textarea>
+                                        :readonly="!canUpdate">
+</textarea>
                                 </div>
                             </div>
                         </div>
@@ -93,15 +98,18 @@
                             <div class="row mt-0">
                                 <div class="col-4">
                                     <label for="approver" class="form-label label-sm">Approved by</label>
-                                    <input type="text" id="approver" class="form-control" v-model="leaveRequest.approved_by" readonly />
+                                    <input type="text" id="approver" class="form-control"
+                                        v-model="leaveRequest.approved_by" readonly />
                                 </div>
                                 <div class="col-5">
                                     <label for="leave_status" class="form-label label-sm">Leave Status</label>
-                                    <input type="text" id="leave_status" class="form-control"  v-model="leaveRequest.status" readonly />
+                                    <input type="text" id="leave_status" class="form-control"
+                                        v-model="leaveRequest.status" readonly />
                                 </div>
                                 <div class="col-3">
                                     <label for="leave_status" class="form-label label-sm">Date Approved</label>
-                                    <input type="text" id="leave_status" class="form-control" v-model="formatteddate_approved"  readonly />
+                                    <input type="text" id="leave_status" class="form-control"
+                                        v-model="formatteddate_approved" readonly />
                                 </div>
                             </div>
                         </div>
@@ -110,18 +118,36 @@
                     <!-- Modal Footer -->
                     <div class="modal-footer">
 
+                        <div v-if="canCancel">
+                            <button type="button" class="btn btn-danger" @click="cancelLeave">
+                                Cancel Leave
+                            </button>
+                        </div>
+
+
                         <div
                             v-if="user.job_title == 'Department Head' && leaveRequest.status == 'FOR DEPARTMENT HEAD APPROVAL'">
 
-                            <button type="button" class="btn btn-secondary me-2"
-                                @click="approveLeaveRequest">Approve</button>
-                            <button type="button" class="btn btn-danger me-2" @click="denyLeaveRequest">Deny</button>
+                          <button
+  type="button"
+  class="btn btn-secondary me-2"
+  @click="approveLeaveRequest"
+  :disabled="!canApprove"
+>
+  Approve
+</button>
 
+                            <button v-if="canDeny" class="btn btn-danger me-2" @click="denyLeaveRequest">Deny</button>
 
                         </div>
-                        <div v-else>
-                            <button type="button" class="btn btn-info " @click="closeModal">Close</button>
+
+                        <div v-if="leaveRequest.status == 'DENIED'">
+                            <button type="button" class="btn btn-warning" @click="updateLeave">Update</button>
                         </div>
+                        <div>
+                            <button type="button" class="btn btn-info" @click="closeModal">Close</button>
+                        </div>
+
                     </div>
                 </form>
             </div>
@@ -137,20 +163,199 @@ export default {
     props: {
         isVisible: Boolean,
         leaveRequest: Object,
+
+
     },
     data() {
         return {
             user: getUserData() || {},
+            originalLeaveFrom: "",
+            existingLeaves: [],
+            editableLeave: {
+                leave_from: "",
+                leave_to: "",
+                leave_reason: "",
+                leave_number: "",
+            }
         }
     },
 
+    watch: {
+        leaveRequest: {
+            immediate: true,
+            handler(val) {
+                if (!val) return;
+
+                const from = this.toDateInput(val.leave_from);
+                const to = this.toDateInput(val.leave_to);
+
+                this.originalLeaveFrom = from; 
+                this.editableLeave.leave_from = from;
+                this.editableLeave.leave_to = to;
+                this.editableLeave.leave_reason = val.leave_reason || "";
+                this.editableLeave.leave_number = val.leave_number || "";
+            }
+        },
+
+        'editableLeave.leave_from': 'recomputeTotalDays',
+        'editableLeave.leave_to': 'recomputeTotalDays',
+    },
+    mounted() {
+        this.fetchExistingLeaves();
+    },
     methods: {
+        cancelLeave() {
+            Swal.fire({
+                title: "Cancel Leave?",
+                text: "Are you sure you want to cancel this leave request?",
+                icon: "warning",
+                showCancelButton: true,
+                confirmButtonColor: "#d33",
+                confirmButtonText: "Yes, cancel it",
+            }).then(result => {
+                if (!result.isConfirmed) return;
+
+                fetch(`${API_BASE}/approved_deny_leaves`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        args: "CANCELLED",
+                        ref_no: this.leaveRequest.ref_no,
+                        user: `${this.user.first_name} ${this.user.last_name}`,
+                    }),
+                })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            Swal.fire("Cancelled", "Leave request has been cancelled.", "success");
+                            this.$emit("updateDataTable");
+                            this.closeModal();
+                        } else {
+                            Swal.fire("Error", data.error || "Cancel failed", "error");
+                        }
+                    })
+                    .catch(() => Swal.fire("Error", "Something went wrong", "error"));
+            });
+        },
+
+        fetchExistingLeaves() {
+            fetch(`${API_BASE}/get_leaves_for_approval_request_date`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    emp_id: this.user.emp_id
+                })
+            })
+                .then(res => res.json())
+                .then(data => {
+                    this.existingLeaves = data.alldates || [];
+                });
+        },
+
+        normalizeDate(d) {
+            if (!d) return null;
+            const x = new Date(d);
+            return new Date(x.getFullYear(), x.getMonth(), x.getDate());
+        },
+
+        hasDateConflict(from, to) {
+            const newFrom = this.normalizeDate(from);
+            const newTo = this.normalizeDate(to);
+
+            return this.existingLeaves.some(lv => {
+                if (lv.ref_no === this.leaveRequest.ref_no) return false;
+
+                // ❌ ignore denied leaves
+                if (lv.status === "DENIED") return false;
+
+                const oldFrom = this.normalizeDate(lv.leave_from);
+                const oldTo = this.normalizeDate(lv.leave_to);
+
+                if (!oldFrom || !oldTo) return false;
+
+                // overlap check
+                return newFrom <= oldTo && newTo >= oldFrom;
+            });
+        },
+
+
+
+        updateLeave() {
+            if (!this.canUpdate) {
+                Swal.fire(
+                    "Not allowed",
+                    "You can only update denied VL if the original Date From is still in the future.",
+                    "warning"
+                );
+                return;
+            }
+
+            // CHECK DATE CONFLICT
+            if (this.hasDateConflict(this.editableLeave.leave_from, this.editableLeave.leave_to)) {
+                Swal.fire(
+                    "Date Conflict",
+                    "You already have an existing leave that overlaps with the selected dates.",
+                    "warning"
+                );
+                return;
+            }
+
+            const result = this.validateLeaveDates({
+                from: this.editableLeave.leave_from,
+                to: this.editableLeave.leave_to,
+                type: "VL",
+                halfDay: false,
+                isUpdate: true
+            });
+
+            if (!result.valid) {
+                Swal.fire("Invalid", result.msg || "Invalid leave dates.", "warning");
+                return;
+            }
+
+            const payload = {
+                ref_number: this.leaveRequest.ref_no,
+                date_from: this.editableLeave.leave_from,
+                date_to: this.editableLeave.leave_to,
+                leave_number: result.days,
+                leave_reason: this.editableLeave.leave_reason,
+                fullName: `${this.user.first_name} ${this.user.last_name}`,
+            };
+
+            fetch(`${API_BASE}/update_denied_leaves`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload),
+            })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        Swal.fire("Success", "Leave has been updated successfully", "success");
+                        this.$emit("updateDataTable");
+                        this.closeModal();
+                    } else {
+                        Swal.fire("Error", data.error || "Update failed", "error");
+                    }
+                })
+                .catch(() => Swal.fire("Error", "Something went wrong", "error"));
+        },
+
+
         closeModal() {
             this.$emit("close");
         },
 
         approveLeaveRequest() {
-             fetch(`${API_BASE}/approved_deny_leaves`, {
+            if (!this.canApprove) {
+                Swal.fire(
+                    "Cannot Approve",
+                    "This leave can no longer be approved because the Date From has already passed.",
+                    "warning"
+                );
+                return;
+            }
+
+            fetch(`${API_BASE}/approved_deny_leaves`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -159,27 +364,25 @@ export default {
                     args: "APPROVED",
                     ref_no: this.leaveRequest.ref_no,
                     user: `${this.user.first_name} ${this.user.last_name}`,
-                }
-                ),
+                }),
             })
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
                         Swal.fire("Success", "Leave request approved", "success");
-                        this.$emit('updateDataTable'); // Emit the event
-                        this.closeModal(); // Close the modal
+                        this.$emit("updateDataTable");
+                        this.closeModal();
                     } else {
-                        Swal.fire("Error", data.error || "Failed to submit leave", "error");
+                        Swal.fire("Error", data.error || "Failed to approve leave", "error");
                     }
                 })
-                .catch(error => {
-                    console.error("Error submitting form:", error);
+                .catch(() => {
                     Swal.fire("Error", "Something went wrong", "error");
                 });
         },
 
         denyLeaveRequest() {
-             fetch(`${API_BASE}/approved_deny_leaves`, {
+            fetch(`${API_BASE}/approved_deny_leaves`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -207,13 +410,43 @@ export default {
                 });
         },
 
+        toDateInput(date) {
+            if (!date) return "";
+
+            const d = new Date(date);
+            const y = d.getFullYear();
+            const m = String(d.getMonth() + 1).padStart(2, "0");
+            const day = String(d.getDate()).padStart(2, "0");
+
+            return `${y}-${m}-${day}`;
+        },
+
+
         formatDate(date) {
             if (date) {
                 const formattedDate = new Date(date);
                 return formattedDate.toISOString().split('T')[0]; // returns yyyy-mm-dd
             }
             return '';
-        }
+        },
+
+        recomputeTotalDays() {
+            if (!this.canUpdate) return;
+
+            const result = this.validateLeaveDates({
+                from: this.editableLeave.leave_from,
+                to: this.editableLeave.leave_to,
+                type: "VL",
+                halfDay: false,
+                isUpdate: true
+            });
+
+            this.editableLeave.leave_number = result.valid ? result.days : "";
+        },
+
+
+
+
     },
 
     computed: {
@@ -233,7 +466,86 @@ export default {
         },
         formatteddate_approved() {
             return this.formatDate(this.leaveRequest.date_approved);
-        }
+        },
+        canDeny() {
+            return !['Sick Leave', 'Emergency Leave', 'SL', 'EL'].includes(this.leaveRequest.leave_type);
+        },
+
+        todayIsNotDateFrom() {
+            if (!this.leaveRequest.leave_from) return false;
+
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            const from = new Date(this.leaveRequest.leave_from);
+            from.setHours(0, 0, 0, 0);
+
+            return today.getTime() !== from.getTime();
+        },
+
+        canUpdate() {
+            if (!this.leaveRequest) return false;
+            if (this.leaveRequest.leave_type !== "VL") return false;
+            if (this.leaveRequest.status !== "DENIED") return false;
+
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            const from = new Date(this.leaveRequest.leave_from);
+            from.setHours(0, 0, 0, 0);
+
+            // ✅ edit allowed only if date_from still in future
+            return from.getTime() > today.getTime();
+        },
+
+
+        canCancel() {
+            if (!this.leaveRequest) return false;
+
+            const status = this.leaveRequest.status;
+
+            // already cancelled
+            if (status === "CANCELLED") return false;
+
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            const from = new Date(this.leaveRequest.leave_from);
+            from.setHours(0, 0, 0, 0);
+
+            // pending approval → always cancelable
+            if (status === "FOR DEPARTMENT HEAD APPROVAL") return true;
+
+            // denied or approved → only if date_from is still in the future
+            if (["DENIED", "APPROVED"].includes(status)) {
+                return from.getTime() > today.getTime();
+            }
+
+            return false;
+        },
+
+        canApprove() {
+            if (!this.leaveRequest) return false;
+
+            if (this.leaveRequest.status !== "FOR DEPARTMENT HEAD APPROVAL") {
+                return false;
+            }
+
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            const from = new Date(this.leaveRequest.leave_from);
+            from.setHours(0, 0, 0, 0);
+
+            // cannot approve if Date From already passed
+            return from.getTime() >= today.getTime();
+        },
+
+
+
+
+
+
 
 
     },

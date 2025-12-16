@@ -311,6 +311,22 @@ export default {
                 });
         },
 
+        formatDateTime(date) {
+            if (!date) return '';
+
+            const d = new Date(date);
+
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+
+            const hours = String(d.getHours()).padStart(2, '0');
+            const minutes = String(d.getMinutes()).padStart(2, '0');
+            const seconds = String(d.getSeconds()).padStart(2, '0');
+
+            return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+        },
+
         saveActualDates() {
 
 
@@ -322,14 +338,14 @@ export default {
 
             const payload = {
                 ref_number: this.ob_ot_Request.ref_number,
-                actual_from: this.actualDates.actual_from,
-                actual_to: this.actualDates.actual_to,
+                actual_from: this.formatDateTime(this.actualDates.actual_from),
+                actual_to: this.formatDateTime(this.actualDates.actual_to),
                 actual_hours: this.total_time,
                 user: `${this.user.first_name} ${this.user.last_name}`
             };
 
             console.log(payload)
-            fetch(`${API_BASE}/save_actual_otob_dates`, {
+            fetch(`${API_BASE}/update_actual_date`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload)
@@ -341,7 +357,7 @@ export default {
                         Swal.fire({
                             icon: "success",
                             title: `${this.ob_ot_Request.type} Actual Dates Saved`,
-                            text: `Total Time: ${total_hours}`,
+                            text: `Total Time: ${this.total_time}`,
                         });
 
                         // refresh parent table

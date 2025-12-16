@@ -53,7 +53,7 @@ def create_request():
         cursor.execute(
             """INSERT INTO otob_history (module, ref_number, action, `user`, date) 
             VALUES (%s, %s, %s, %s, NOW())""",
-            ('APPROVAL', newref_No, 'New Request Has been submitted', fullName)
+            ('LEAVE SUBMITTED', newref_No, 'New Request Has been submitted', fullName)
         )
 
         mysql.connection.commit()
@@ -178,7 +178,7 @@ def update_approved_deny_otob():
             cursor.execute(
                 """INSERT INTO otob_history (module, ref_number, action, `user`, date) 
                 VALUES (%s, %s, %s, %s, NOW())""",
-                ('APPROVAL', ref_number, 'Approved Request', username)
+                ('REQUEST APPROVAL', ref_number, 'Approved Request', username)
             )
         else:
             cursor.execute(
@@ -187,12 +187,57 @@ def update_approved_deny_otob():
             cursor.execute(
                 """INSERT INTO otob_history (module, ref_number, action, `user`, date) 
                 VALUES (%s, %s, %s, %s, NOW())""",
-                ('APPROVAL', ref_number, 'Denied Request', username)
+                ('REQUEST APPROVAL', ref_number, 'Denied Request', username)
             )
         
         mysql.connection.commit()
         cursor.close()
 
         return jsonify({"success": True,"args":args,"ref_no":ref_number}), 201
+    except Exception as e:
+        return jsonify({"error": str(e)}),500
+    
+@ot_ob_bp.route('/update_actual_date', methods=['POST'])
+def update_actual_date():
+    try:
+        data = request.get_json()
+        ref_number = data.get("ref_number")
+        actual_from = data.get("actual_from")
+        actual_to = data.get("actual_to")
+        actual_hours = data.get("actual_hours")
+        fullName = data.get("user")
+
+        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor.execute(
+                "UPDATE ot_ob set actual_dfrom = %s, actual_dto = %s, actual_hours = %s, status = %s WHERE ref_number = %s",(actual_from, actual_to, actual_hours, "FOR HR RECORD", ref_number))
+            
+        cursor.execute(
+                """INSERT INTO otob_history (module, ref_number, action, `user`, date) 
+                VALUES (%s, %s, %s, %s, NOW())""",
+                ('ACTUAL REQUEST', ref_number, 'Update Actual Date and Time', fullName)
+            )
+        
+        mysql.connection.commit()
+        cursor.close()
+        
+        return jsonify({"success": True,"ref_no":ref_number}), 201
+    except Exception as e:
+        return jsonify({"error": str(e)}),500
+    
+@ot_ob_bp.route('/get_otob_for_approval_request_date', methods=['POST'])
+def get_otob_for_approval_request_date():
+    try:
+        data = request.get_json()
+        emp_id = data.get("emp_id")
+
+        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor.execute("""
+            SELECT  req_from,req_to from ot_ob where emp_id = %s and (status = 'FOR DEPARTMENT HEAD APPROVAL' || status = 'APPROVED' || status = 'FOR HR RECORD')
+        """, (emp_id,))  
+        alldates = cursor.fetchall()
+
+        cursor.close()
+
+        return jsonify({"success": True,"alldates":alldates}), 201
     except Exception as e:
         return jsonify({"error": str(e)}),500

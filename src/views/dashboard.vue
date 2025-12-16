@@ -349,15 +349,17 @@ export default {
     },
 
     handleDateClick(info) {
-      const clickedDate = info.dateStr;
+      const clickedDate = info.dateStr; // YYYY-MM-DD
 
-      // Filter all events for the clicked date
       const eventsForDay = this.leaveEvents.filter(ev => {
-        const eventDate = new Date(ev.date).toISOString().slice(0, 10);
+        const eventDate = ev.date instanceof Date
+          ? ev.date.toLocaleDateString('en-CA')
+          : new Date(ev.date).toLocaleDateString('en-CA');
+
         return eventDate === clickedDate;
       });
 
-      if (eventsForDay.length === 0) {
+      if (!eventsForDay.length) {
         Swal.fire({
           icon: "info",
           title: "No Schedule",
@@ -366,17 +368,17 @@ export default {
         });
         return;
       }
-      const eventListHTML = eventsForDay
-        .map(ev => {
-          const color =
-            ev.title.includes("SL") ? "#edc55b" :
-              ev.title.includes("VL") ? "#fb6f92" :
-                ev.title.includes("EL") ? "#80e183dc" :
-                  ev.title.includes("OB") ? "#b889f2" :
-                    ev.title.includes("OT") ? "#50a6c0" :
-                      "#ccc";
 
-          return `
+      const eventListHTML = eventsForDay.map(ev => {
+        const color =
+          ev.title.includes("SL") ? "#edc55b" :
+            ev.title.includes("VL") ? "#fb6f92" :
+              ev.title.includes("EL") ? "#fb6f92" :
+                ev.title.includes("OB") ? "#b889f2" :
+                  ev.title.includes("OT") ? "#50a6c0" :
+                    "#ccc";
+
+        return `
         <div style="
             background: #fafafa;
             padding: 10px 14px;
@@ -388,7 +390,7 @@ export default {
           <span style="font-weight: 600;">${ev.title}</span>
         </div>
       `;
-        })
+      })
         .join("");
 
       Swal.fire({
@@ -498,9 +500,6 @@ export default {
           let events = [];
           // helper (ilagay sa methods)
 
-
-
-          //LEAVES
           // LEAVES
           (data.dateall || []).forEach(item => {
 
@@ -513,7 +512,6 @@ export default {
 
             let current = new Date(start);
 
-            // normalize (para iwas timezone/offset issues)
             current.setHours(0, 0, 0, 0);
             end.setHours(0, 0, 0, 0);
 

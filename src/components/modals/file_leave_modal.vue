@@ -140,6 +140,7 @@ export default {
         return {
             user: getUserData() || {},
             selectedTypeofLeave: "",
+            existingLeaves: [],
             leaveForm: {
                 date_from: "",
                 date_to: "",
@@ -163,7 +164,10 @@ export default {
                 const d = String(today.getDate()).padStart(2, '0');
                 return `${y}-${m}-${d}`;
             }
+
             return null;
+
+
         }
     },
     watch: {
@@ -172,6 +176,52 @@ export default {
         'leaveForm.half_day': 'calculateTotalLeaveDays',
     },
     methods: {
+        fetchExistingLeaves() {
+            fetch(`${API_BASE}/get_leaves_for_approval_request_date`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    emp_id: this.user.emp_id
+                })
+            })
+                .then(res => res.json())
+                .then(data => {
+                    console.log(data)
+                    this.existingLeaves = data.leaves || [];
+                });
+        },
+        normalizeDate(d) {
+            if (!d) return null;
+
+            const x = new Date(d);
+
+            // FORCE UTC — no timezone shifting
+            return new Date(
+                Date.UTC(
+                    x.getUTCFullYear(),
+                    x.getUTCMonth(),
+                    x.getUTCDate()
+                )
+            );
+        },
+        hasDateConflict(from, to) {
+            const newFrom = this.normalizeDate(from);
+            const newTo = this.normalizeDate(to);
+
+            return this.existingLeaves.some(lv => {
+                // Block ALL except denied
+                if (lv.status === "DENIED") return false;
+
+                const oldFrom = this.normalizeDate(lv.leave_from);
+                const oldTo = this.normalizeDate(lv.leave_to);
+
+                if (!oldFrom || !oldTo) return false;
+
+                return newFrom <= oldTo && newTo >= oldFrom;
+            });
+        },
+
+
         closeModal() {
             // reset fields
             this.selectedTypeofLeave = "";
@@ -185,7 +235,7 @@ export default {
             this.$emit("close");
         },
 
-       
+
 
 
         calculateTotalLeaveDays() {
@@ -283,6 +333,16 @@ export default {
                 return;
             }
 
+            if (this.hasDateConflict(this.leaveForm.date_from, this.leaveForm.date_to)) {
+                Swal.fire(
+                    "Not Allowed",
+                    "You already have a filed leave that overlaps with the selected dates.",
+                    "warning"
+                );
+                return;
+            }
+
+
             if (this.selectedTypeofLeave === 'VL') {
                 const start = new Date(this.leaveForm.date_from);
                 const now = new Date();
@@ -352,6 +412,9 @@ export default {
 
             this.closeModal();
         }
+    },
+    mounted() {
+        this.fetchExistingLeaves();
     }
 };
 </script>
