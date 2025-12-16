@@ -1,0 +1,94 @@
+
+.pdf-wrapper {
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 12px;
+    color: #222;
+}
+
+/* HEADER */
+.header {
+    text-align: center;
+    margin-bottom: 22px;
+}
+
+.header h2 {
+    margin: 0;
+    font-size: 24px;
+    letter-spacing: 0.6px;
+    font-weight: bold;
+    color: #66bcb4;
+}
+
+.subtitle {
+    font-size: 12px;
+    color: #666;
+    margin-top: 4px;
+}
+
+.header-divider {
+    margin: 12px auto 0;
+    width: 80%;
+    border-bottom: 1px solid #ddd;
+}
+
+
+/* CARD */
+.card {
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 14px;
+    margin-bottom: 16px;
+    background-color: #fafbfc;
+}
+
+.card-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: #6b7280;
+    letter-spacing: 0.5px;
+    margin-bottom: 12px;
+    border-bottom: 1px solid #e5e7eb;
+    padding-bottom: 6px;
+}
+
+/* GRID SYSTEM */
+.grid-1 {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+}
+
+.grid-2 {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    margin-top: 10px;
+}
+
+.grid-3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-top: 10px;
+}
+
+/* FIELD */
+.field label {
+    font-size: 10px;
+    font-weight: 700;
+    color: #2b6777;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+    display: block;
+}
+
+.value {
+    background: #f1f3f5;
+    border-radius: 4px;
+    padding: 8px 10px;
+    font-size: 12px;
+}
+
+.value.box {
+    min-height: 40px;
+}

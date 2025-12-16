@@ -101,15 +101,16 @@
                                     <input type="text" id="approver" class="form-control"
                                         v-model="leaveRequest.approved_by" readonly />
                                 </div>
-                                <div class="col-5">
-                                    <label for="leave_status" class="form-label label-sm">Leave Status</label>
-                                    <input type="text" id="leave_status" class="form-control"
-                                        v-model="leaveRequest.status" readonly />
-                                </div>
+                               
                                 <div class="col-3">
                                     <label for="leave_status" class="form-label label-sm">Date Approved</label>
                                     <input type="text" id="leave_status" class="form-control"
                                         v-model="formatteddate_approved" readonly />
+                                </div>
+                                 <div class="col-5">
+                                    <label for="leave_status" class="form-label label-sm">Leave Status</label>
+                                    <input type="text" id="leave_status" class="form-control"
+                                        v-model="leaveRequest.status" readonly />
                                 </div>
                             </div>
                         </div>
@@ -118,7 +119,12 @@
                     <!-- Modal Footer -->
                     <div class="modal-footer">
 
-                        
+                        <button v-if="leaveRequest.status === 'APPROVED'" type="button" class="btn btn-primary"
+                            @click="downloadLeavePdf">
+
+                            <i class="fas fa-print"></i> Print
+                        </button>
+
                         <div
                             v-if="user.job_title == 'Department Head' && leaveRequest.status == 'FOR DEPARTMENT HEAD APPROVAL'">
 
@@ -147,6 +153,11 @@
 
                     </div>
                 </form>
+
+                <leaves_print ref="leavePdf" :request="leaveRequest" v-show="showLeavePdf" />
+
+
+
             </div>
         </div>
     </div>
@@ -155,13 +166,16 @@
 <script>
 import API_BASE from '@/utils/api_config';
 import { getUserData } from '@/utils/get_user_data';
+import html2pdf from "html2pdf.js"
+import leaves_print from "../prints/leaves_print.vue"
 
 export default {
+    components: {
+        leaves_print
+    },
     props: {
         isVisible: Boolean,
         leaveRequest: Object,
-
-
     },
     data() {
         return {
@@ -173,7 +187,8 @@ export default {
                 leave_to: "",
                 leave_reason: "",
                 leave_number: "",
-            }
+            },
+            showLeavePdf: false,
         }
     },
 
@@ -186,7 +201,7 @@ export default {
                 const from = this.toDateInput(val.leave_from);
                 const to = this.toDateInput(val.leave_to);
 
-                this.originalLeaveFrom = from; 
+                this.originalLeaveFrom = from;
                 this.editableLeave.leave_from = from;
                 this.editableLeave.leave_to = to;
                 this.editableLeave.leave_reason = val.leave_reason || "";
@@ -201,6 +216,39 @@ export default {
         this.fetchExistingLeaves();
     },
     methods: {
+        downloadLeavePdf() {
+
+            this.showLeavePdf = true;
+
+            this.$nextTick(() => {
+                setTimeout(() => {
+                    const element = this.$refs.leavePdf.$el;
+
+                    html2pdf()
+                        .set({
+                            margin: 10,
+                            filename: `${this.leaveRequest.ref_no}.pdf`,
+                            image: { type: "jpeg", quality: 0.98 },
+                            html2canvas: {
+                                scale: 2,
+                                useCORS: true
+                            },
+                            jsPDF: {
+                                unit: "mm",
+                                format: "a4",
+                                orientation: "portrait"
+                            }
+                        })
+                        .from(element)
+                        .save()
+                        .then(() => {
+                            this.showLeavePdf = false;
+                        });
+                },);
+            });
+        },
+
+
         cancelLeave() {
             Swal.fire({
                 title: "Cancel Leave?",
@@ -262,7 +310,7 @@ export default {
             return this.existingLeaves.some(lv => {
                 if (lv.ref_no === this.leaveRequest.ref_no) return false;
 
-                // ❌ ignore denied leaves
+                // ignore denied leaves
                 if (lv.status === "DENIED") return false;
 
                 const oldFrom = this.normalizeDate(lv.leave_from);
@@ -491,7 +539,7 @@ export default {
             const from = new Date(this.leaveRequest.leave_from);
             from.setHours(0, 0, 0, 0);
 
-            // ✅ edit allowed only if date_from still in future
+            //  edit allowed only if date_from still in future
             return from.getTime() > today.getTime();
         },
 
@@ -591,5 +639,13 @@ input:focus {
 #leave_reason:focus {
     background-color: #fff !important;
     font-size: 12px !important;
+}
+
+.pdf-hidden {
+    position: fixed;
+    top: 0;
+    left: -9999px;
+    width: 800px;
+    background: white;
 }
 </style>

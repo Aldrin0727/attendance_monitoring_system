@@ -209,7 +209,7 @@ def update_actual_date():
 
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
         cursor.execute(
-                "UPDATE ot_ob set actual_dfrom = %s, actual_dto = %s, actual_hours = %s, status = %s WHERE ref_number = %s",(actual_from, actual_to, actual_hours, "FOR HR RECORD", ref_number))
+                "UPDATE ot_ob set actual_from = %s, actual_to = %s, actual_hours = %s, status = %s WHERE ref_number = %s",(actual_from, actual_to, actual_hours, "FOR HR RECORD", ref_number))
             
         cursor.execute(
                 """INSERT INTO otob_history (module, ref_number, action, `user`, date) 
@@ -232,7 +232,7 @@ def get_otob_for_approval_request_date():
 
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
         cursor.execute("""
-            SELECT  req_from,req_to from ot_ob where emp_id = %s and (status = 'FOR DEPARTMENT HEAD APPROVAL' || status = 'APPROVED' || status = 'FOR HR RECORD')
+            SELECT  * from ot_ob where emp_id = %s and (status = 'FOR DEPARTMENT HEAD APPROVAL' || status = 'APPROVED' || status = 'FOR HR RECORD')
         """, (emp_id,))  
         alldates = cursor.fetchall()
 
