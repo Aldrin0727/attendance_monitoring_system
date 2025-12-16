@@ -453,10 +453,6 @@ export default {
                     Swal.fire("Error", "Something went wrong", "error");
                 });
 
-<<<<<<< HEAD
-            // after successful submit, close modal
-=======
->>>>>>> origin/lj_branch
             this.closeModal();
         },
         fetchRemainingLeaves() {
