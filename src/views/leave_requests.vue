@@ -82,6 +82,7 @@ export default {
             is_modal_visible: false,
 
             columns: [
+                { title: 'Reference No.', data: 'ref_no' },
                 { title: 'Employee ID', data: 'emp_id' },
                 { title: 'Employee Name', data: 'user' },
                 { title: 'Type', data: 'leave_type',
