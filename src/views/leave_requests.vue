@@ -34,9 +34,13 @@
 
         <!-- DataTable -->
     <div class="card p-4 mt-3">
-            <DataTable v-if="leaveRequests.length" :key="datatableKey"
+            <!-- <DataTable v-if="leaveRequests.length" :key="datatableKey"
                 class="table table-striped table-bordered display custom-table" :columns="columns" :data="leaveRequests"
-                :options="datatableOptions" />
+                :options="datatableOptions" /> -->
+
+            <DataTable :key="datatableKey" class="table table-striped table-bordered display custom-table"
+                :columns="columns" :data="leaveRequests" :options="datatableOptions" />
+
         </div>
 
     </div>
