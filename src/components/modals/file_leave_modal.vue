@@ -50,7 +50,16 @@
 
                             <!-- Leave Request Section -->
                             <div class="section">
-                                <div class="section-title">Leave Request</div>
+                                <div class="section-title d-flex justify-content-between align-items-center">
+                                    <span>Leave Request</span>
+
+                                    <small v-if="selectedTypeofLeave" style="color: #df7a8a">
+                                        <i>Remaining {{ getBalanceType(selectedTypeofLeave) }}:
+                                            {{ remainingLeaves[getBalanceType(selectedTypeofLeave)] ?? 0 }} day(s)
+                                        </i>
+                                    </small>
+                                </div>
+
                                 <hr class="mt-0">
 
                                 <div class="row mb-0">
@@ -101,7 +110,7 @@
                                     </div>
                                 </div>
 
-                                <div class="row mb-1">
+                                <div class="row mb-2">
                                     <div class="col-12">
                                         <label for="leave_reason" class="form-label label-sm">
                                             Reason for leave <strong style="color: red">*</strong>
@@ -110,7 +119,10 @@
                                             v-model="leaveForm.leave_reason" required></textarea>
                                     </div>
                                 </div>
+
+
                             </div>
+
                         </div>
 
                         <!-- Modal Footer -->
@@ -150,6 +162,10 @@ export default {
                 approver: "",
                 status: "",
             },
+            remainingLeaves: {
+                VL: 0,
+                SL: 0,
+            },
         };
     },
     computed: {
@@ -168,7 +184,9 @@ export default {
             return null;
 
 
-        }
+        },
+
+
     },
     watch: {
         'leaveForm.date_from': 'calculateTotalLeaveDays',
@@ -176,6 +194,11 @@ export default {
         'leaveForm.half_day': 'calculateTotalLeaveDays',
     },
     methods: {
+        getBalanceType(type) {
+
+            if (type === 'EL') return 'VL';
+            return type;
+        },
         fetchExistingLeaves() {
             fetch(`${API_BASE}/get_leaves_for_approval_request_date`, {
                 method: "POST",
@@ -187,7 +210,8 @@ export default {
                 .then(res => res.json())
                 .then(data => {
                     console.log(data)
-                    this.existingLeaves = data.leaves || [];
+                    this.existingLeaves = data.alldates || [];
+
                 });
         },
         normalizeDate(d) {
@@ -242,6 +266,12 @@ export default {
             const from = this.leaveForm.date_from;
             const to = this.leaveForm.date_to;
             const halfDay = this.leaveForm.half_day;
+
+            if (!this.selectedTypeofLeave) {
+                this.leaveForm.total_leave_days = "";
+                return;
+            }
+
 
             if (!from || !to) {
                 this.leaveForm.total_leave_days = '';
@@ -378,6 +408,19 @@ export default {
                 }
             }
 
+            const requestedDays = Number(this.leaveForm.total_leave_days);
+            const balanceType = this.getBalanceType(this.selectedTypeofLeave);
+            const remaining = Number(this.remainingLeaves[balanceType] || 0);
+
+            if (requestedDays > remaining) {
+                Swal.fire(
+                    "Not Allowed",
+                    `You only have ${remaining} remaining ${balanceType} day(s).`,
+                    "warning"
+                );
+                return;
+            }
+
             const formData = {
                 selectedTypeofLeave: this.selectedTypeofLeave,
                 fullName: this.fullName,
@@ -411,10 +454,31 @@ export default {
                 });
 
             this.closeModal();
-        }
+        },
+        fetchRemainingLeaves() {
+            fetch(`${API_BASE}/get_remaining_leaves`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    emp_id: this.user.emp_id
+                })
+            })
+                .then(res => res.json())
+                .then(data => {
+                    this.remainingLeaves = {
+                        VL: Number(data.remaining?.VL || 0),
+                        SL: Number(data.remaining?.SL || 0)
+                    };
+                })
+                .catch(() => {
+                    this.remainingLeaves = { VL: 0, SL: 0 };
+                });
+        },
+
     },
     mounted() {
         this.fetchExistingLeaves();
+        this.fetchRemainingLeaves(); 
     }
 };
 </script>

@@ -340,3 +340,49 @@ def update_denied_leaves():
         return jsonify({"success": True}), 201
     except Exception as e:
         return jsonify({"error": str(e)}),500
+
+@leave_bp.route('/get_remaining_leaves', methods=['POST'])
+def get_remaining_leaves():
+    try:
+        data = request.get_json()
+        emp_id = data.get("emp_id")
+
+        ANNUAL_VL = 15
+        ANNUAL_SL = 15
+
+        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+
+        # VL + EL share balance
+        cursor.execute("""
+            SELECT COALESCE(SUM(leave_number), 0) AS used_vl
+            FROM Leave_Details
+            WHERE emp_id = %s
+              AND status = 'APPROVED'
+              AND leave_type IN ('VL','EL')
+        """, (emp_id,))
+        used_vl = cursor.fetchone()["used_vl"]
+
+        cursor.execute("""
+            SELECT COALESCE(SUM(leave_number), 0) AS used_sl
+            FROM Leave_Details
+            WHERE emp_id = %s
+              AND status = 'APPROVED'
+              AND leave_type = 'SL'
+        """, (emp_id,))
+        used_sl = cursor.fetchone()["used_sl"]
+
+        cursor.close()
+
+        remaining_vl = max(ANNUAL_VL - used_vl, 0)
+        remaining_sl = max(ANNUAL_SL - used_sl, 0)
+
+        return jsonify({
+            "success": True,
+            "remaining": {
+                "VL": remaining_vl,
+                "SL": remaining_sl
+            }
+        }), 200
+
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
