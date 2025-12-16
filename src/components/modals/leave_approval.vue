@@ -118,6 +118,22 @@
                     <!-- Modal Footer -->
                     <div class="modal-footer">
 
+                        
+                        <div
+                            v-if="user.job_title == 'Department Head' && leaveRequest.status == 'FOR DEPARTMENT HEAD APPROVAL'">
+
+                            <button type="button" class="btn btn-secondary" @click="approveLeaveRequest"
+                                :disabled="!canApprove">
+                                Approve
+                            </button>
+
+                            <button v-if="canDeny" class="btn btn-danger" @click="denyLeaveRequest">Deny</button>
+
+                        </div>
+
+                        <div v-if="leaveRequest.status == 'DENIED'">
+                            <button type="button" class="btn btn-warning" @click="updateLeave">Update</button>
+                        </div>
                         <div v-if="canCancel">
                             <button type="button" class="btn btn-danger" @click="cancelLeave">
                                 Cancel Leave
@@ -125,25 +141,6 @@
                         </div>
 
 
-                        <div
-                            v-if="user.job_title == 'Department Head' && leaveRequest.status == 'FOR DEPARTMENT HEAD APPROVAL'">
-
-                          <button
-  type="button"
-  class="btn btn-secondary me-2"
-  @click="approveLeaveRequest"
-  :disabled="!canApprove"
->
-  Approve
-</button>
-
-                            <button v-if="canDeny" class="btn btn-danger me-2" @click="denyLeaveRequest">Deny</button>
-
-                        </div>
-
-                        <div v-if="leaveRequest.status == 'DENIED'">
-                            <button type="button" class="btn btn-warning" @click="updateLeave">Update</button>
-                        </div>
                         <div>
                             <button type="button" class="btn btn-info" @click="closeModal">Close</button>
                         </div>
@@ -503,6 +500,8 @@ export default {
             if (!this.leaveRequest) return false;
 
             const status = this.leaveRequest.status;
+
+            if (this.leaveRequest.emp_id !== this.user.emp_id) return false;
 
             // already cancelled
             if (status === "CANCELLED") return false;

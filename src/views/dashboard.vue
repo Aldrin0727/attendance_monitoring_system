@@ -43,7 +43,11 @@
 
 
     <!-- File a Leave Button (right aligned) -->
-    <div class="col-lg-6 text-end">
+    <div
+    :class="user.job_title === 'Department Head'
+      ? 'col-lg-6 text-end'
+      : 'col-lg-12 text-end'"
+  >
       <button class="btn btn-secondary" @click="file_leave_btn">
         <font-awesome-icon :icon="['fas', 'circle-plus']" class="" /> File a Leave
       </button>
