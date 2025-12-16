@@ -61,7 +61,7 @@ def add_leave_details():
         cursor.execute(
             """INSERT INTO leave_history (module, ref_no, action, `user`, history_date) 
             VALUES (%s, %s, %s, %s, NOW())""",
-            ('APPROVAL', newref_No, 'New Leave Request Has been submitted', username)
+            ('LEAVE SUBMITTED', newref_No, 'New Leave Request Has been submitted', username)
         )
 
         mysql.connection.commit()
@@ -243,7 +243,16 @@ def update_approved__deny_leaves():
             cursor.execute(
                 """INSERT INTO leave_history (module, ref_no, action, `user`, history_date) 
                 VALUES (%s, %s, %s, %s, NOW())""",
-                ('APPROVAL', ref_no, 'Approved Leave', username)
+                ('LEAVE APPROVAL', ref_no, 'Approved Leave', username)
+            )
+        elif args == "CANCELLED" :
+            cursor.execute(
+                "UPDATE  Leave_Details set status = %s WHERE ref_no = %s",(args, ref_no))
+            
+            cursor.execute(
+                """INSERT INTO leave_history (module, ref_no, action, `user`, history_date) 
+                VALUES (%s, %s, %s, %s, NOW())""",
+                ('CANCEL LEAVE', ref_no, 'Cancelled Leave', username)
             )
         else:
             cursor.execute(
@@ -252,7 +261,7 @@ def update_approved__deny_leaves():
             cursor.execute(
                 """INSERT INTO leave_history (module, ref_no, action, `user`, history_date) 
                 VALUES (%s, %s, %s, %s, NOW())""",
-                ('APPROVAL', ref_no, 'Denied Leave', username)
+                ('LEAVE APPROVAL', ref_no, 'Denied Leave', username)
             )
         
         mysql.connection.commit()
@@ -285,5 +294,49 @@ def get_calendar_date():
 
         return jsonify({"success": True,"dateall":dateall,"otoball":otoball}), 201
 
+    except Exception as e:
+        return jsonify({"error": str(e)}),500
+
+@leave_bp.route('/get_leaves_for_approval_request_date', methods=['POST'])
+def get_leaves_for_approval_request_date():
+    try:
+        data = request.get_json()
+        emp_id = data.get("emp_id")
+
+        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor.execute("""
+            SELECT  leave_from,leave_to from Leave_Details where emp_id = %s and (status = 'FOR DEPARTMENT HEAD APPROVAL' || status = 'APPROVED')
+        """, (emp_id,))  
+        alldates = cursor.fetchall()
+
+        cursor.close()
+
+        return jsonify({"success": True,"alldates":alldates}), 201
+    except Exception as e:
+        return jsonify({"error": str(e)}),500
+    
+@leave_bp.route('/update_denied_leaves', methods=['POST'])
+def update_denied_leaves():
+    try:
+        data = request.get_json()
+        ref_number = data.get("ref_number")
+        date_from = data.get("date_from")
+        date_to = data.get("date_to")
+        reason = data.get("leave_reason")
+        fullName = data.get("fullName")
+
+        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor.execute(
+            "UPDATE  Leave_Details set leave_from = %s, leave_to = %s, leave_reason = %s, status = %s WHERE ref_no = %s",(date_from, date_to, reason, "FOR DEPARTMENT HEAD APPROVAL", ref_number))
+        
+        cursor.execute(
+                """INSERT INTO leave_history (module, ref_no, action, `user`, history_date) 
+                VALUES (%s, %s, %s, %s, NOW())""",
+                ('UPDATE LEAVE', ref_number, 'Update Leave details', fullName))
+        
+        mysql.connection.commit()
+        cursor.close()
+
+        return jsonify({"success": True}), 201
     except Exception as e:
         return jsonify({"error": str(e)}),500
