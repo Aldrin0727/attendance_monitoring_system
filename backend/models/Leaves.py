@@ -279,13 +279,13 @@ def get_calendar_date():
 
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
         date_qry = f"""
-                       SELECT * from Leave_Details where department = %s"""
+                       SELECT * from Leave_Details where department = %s and status IN ("APPROVED","FOR DEPARTMENT HEAD APPROVAL")  """
         values = [department] 
         cursor.execute(date_qry, tuple(values))
         dateall = cursor.fetchall()
 
         otob_qry = f"""
-                       SELECT * from ot_ob where department = %s"""
+                       SELECT * from ot_ob where department = %s and status IN ("APPROVED","FOR DEPARTMENT HEAD APPROVAL")"""
         valuess = [department] 
         cursor.execute(otob_qry, tuple(valuess))
         otoball = cursor.fetchall()

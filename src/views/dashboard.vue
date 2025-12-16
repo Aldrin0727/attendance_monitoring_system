@@ -502,8 +502,6 @@ export default {
           }
 
           let events = [];
-          // helper (ilagay sa methods)
-
           // LEAVES
           (data.dateall || []).forEach(item => {
 
