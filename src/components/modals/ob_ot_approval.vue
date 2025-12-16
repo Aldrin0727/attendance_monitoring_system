@@ -109,28 +109,32 @@
                     </div>
 
                     <!-- ACTUAL OB/OT DATE INPUTS (Visible Only When Approved) -->
-                    <div class="section mt-3" v-if="ob_ot_Request.status === 'APPROVED'">
-                        <div class="section-title">Actual {{ ob_ot_Request.type }} Execution</div>
+                    <div class="section mt-3" v-if="['APPROVED', 'FOR HR RECORD'].includes(ob_ot_Request.status)">
+                        <div class="section-title">
+                            Actual {{ ob_ot_Request.type }} Execution
+                        </div>
                         <hr class="mt-0">
 
                         <div class="row">
                             <div class="col-5">
                                 <label class="form-label label-sm">Actual Start Date & Time</label>
-                                <input type="datetime-local" class="form-control" v-model="actualDates.actual_from" />
+                                <input type="datetime-local" class="form-control" v-model="actualDates.actual_from"
+                                    :readonly="isHrRecord" />
                             </div>
 
                             <div class="col-5">
                                 <label class="form-label label-sm">Actual End Date & Time</label>
-                                <input type="datetime-local" class="form-control" v-model="actualDates.actual_to" />
+                                <input type="datetime-local" class="form-control" v-model="actualDates.actual_to"
+                                    :readonly="isHrRecord" />
                             </div>
+
                             <div class="col-2">
                                 <label class="form-label label-sm">Hours</label>
-                                <input type="input" class="form-control total_hours" v-model="total_time" readonly />
+                                <input type="text" class="form-control total_hours" v-model="total_time" readonly />
                             </div>
                         </div>
-
-
                     </div>
+
 
 
                     <!-- APPROVER INFO -->
@@ -161,6 +165,12 @@
 
                 <!-- FOOTER -->
                 <div class="modal-footer">
+                    <div v-if="canDownloadPdf">
+                        <button class="btn btn-primary" @click="downloadPdf">
+                            <i class="fas fa-print"></i> Print
+                        </button>
+                    </div>
+
                     <div v-if="canApprove">
                         <button class="btn btn-secondary me-2" @click="approveRequest">Approve</button>
                         <button class="btn btn-danger" @click="denyRequest">Deny</button>
@@ -178,7 +188,12 @@
                     </div>
                 </div>
 
+
+                <ot_ob_print ref="pdfTemplate" :request="ob_ot_Request" v-show="showPdf" />
+
+
             </div>
+
         </div>
     </div>
 </template>
@@ -186,8 +201,15 @@
 <script>
 import API_BASE from '@/utils/api_config';
 import { getUserData } from '@/utils/get_user_data';
+import html2pdf from "html2pdf.js";
+import ot_ob_print from '../prints/ot_ob_print.vue';
+
 
 export default {
+    components: {
+        ot_ob_print
+    },
+
     props: {
         isVisible: Boolean,
         ob_ot_Request: Object
@@ -200,32 +222,79 @@ export default {
                 actual_from: "",
                 actual_to: ""
             },
-
+            showPdf: false,
             total_time: ""
 
         };
     },
 
     computed: {
+        isHrRecord() {
+            return this.ob_ot_Request.status === 'FOR HR RECORD';
+        },
         canApprove() {
             return (
                 this.user.job_title === "Department Head" &&
                 this.ob_ot_Request.status === "FOR DEPARTMENT HEAD APPROVAL"
             );
+        },
+        canDownloadPdf() {
+            return ["APPROVED", "FOR HR RECORD"].includes(this.ob_ot_Request.status);
         }
     },
 
     watch: {
-        "actualDates.actual_from": function () {
+        ob_ot_Request: {
+            immediate: true,
+            deep: true,
+            handler(val) {
+                //   console.log('RAW actual_from:', val.actual_from);
+
+                if (['FOR HR RECORD', 'APPROVED'].includes(val.status)) {
+                    this.actualDates.actual_from =
+                        this.formatForDateTimeLocal(val.actual_from);
+
+                    this.actualDates.actual_to =
+                        this.formatForDateTimeLocal(val.actual_to);
+
+                    this.total_time = val.actual_hours || '';
+                }
+            }
+        },
+
+        "actualDates.actual_from"() {
             this.calculateHours();
         },
-        "actualDates.actual_to": function () {
+        "actualDates.actual_to"() {
             this.calculateHours();
         }
     },
 
 
     methods: {
+        downloadPdf() {
+            this.showPdf = true;
+
+            this.$nextTick(() => {
+                const element = this.$refs.pdfTemplate.$el;
+
+                html2pdf()
+                    .set({
+                        margin: 10,
+                        filename: `${this.ob_ot_Request.ref_number}.pdf`,
+                        image: { type: "jpeg", quality: 0.98 },
+                        html2canvas: { scale: 2 },
+                        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" }
+                    })
+                    .from(element)
+                    .save()
+                    .then(() => {
+                        this.showPdf = false;
+                    });
+            });
+        },
+
+
         closeModal() {
             this.$emit("close");
         },
@@ -273,7 +342,7 @@ export default {
                 return;
             }
 
-            // ✔ Valid — Compute hours
+            //  — Compute hours
             const diffMs = endDate - startDate;
             let diffMinutes = Math.floor(diffMs / (1000 * 60));
 
@@ -311,9 +380,37 @@ export default {
                 });
         },
 
+        // formatDateTime2(date) {
+        //     if (!date) return '';
+
+        //     const d = new Date(date);
+
+        //     const year = d.getFullYear();
+        //     const month = String(d.getMonth() + 1).padStart(2, '0');
+        //     const day = String(d.getDate()).padStart(2, '0');
+
+        //     const hours = String(d.getHours()).padStart(2, '0');
+        //     const minutes = String(d.getMinutes()).padStart(2, '0');
+        //     const seconds = String(d.getSeconds()).padStart(2, '0');
+
+        //     return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+        // },
+
+        formatForDateTimeLocal(value) {
+            if (!value) return '';
+
+            const d = new Date(value); 
+
+            const year = d.getUTCFullYear();
+            const month = String(d.getUTCMonth() + 1).padStart(2, '0');
+            const day = String(d.getUTCDate()).padStart(2, '0');
+            const hours = String(d.getUTCHours()).padStart(2, '0');
+            const minutes = String(d.getUTCMinutes()).padStart(2, '0');
+
+            return `${year}-${month}-${day}T${hours}:${minutes}`;
+        },
+
         saveActualDates() {
-
-
             // Required validation
             if (!this.actualDates.actual_from || !this.actualDates.actual_to) {
                 Swal.fire("Missing Fields", "Please provide both Actual Start and Actual End.", "warning");
@@ -322,14 +419,14 @@ export default {
 
             const payload = {
                 ref_number: this.ob_ot_Request.ref_number,
-                actual_from: this.actualDates.actual_from,
-                actual_to: this.actualDates.actual_to,
+                actual_from: this.formatDateTime(this.actualDates.actual_from),
+                actual_to: this.formatDateTime(this.actualDates.actual_to),
                 actual_hours: this.total_time,
                 user: `${this.user.first_name} ${this.user.last_name}`
             };
 
             console.log(payload)
-            fetch(`${API_BASE}/save_actual_otob_dates`, {
+            fetch(`${API_BASE}/update_actual_date`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload)
@@ -341,7 +438,7 @@ export default {
                         Swal.fire({
                             icon: "success",
                             title: `${this.ob_ot_Request.type} Actual Dates Saved`,
-                            text: `Total Time: ${total_hours}`,
+                            text: `Total Time: ${this.total_time}`,
                         });
 
                         // refresh parent table
@@ -393,5 +490,14 @@ export default {
 
 textarea {
     background-color: #e9ecef !important;
+}
+
+.pdf-hidden {
+    position: fixed;
+    top: 0;
+    left: 0;
+    opacity: 0;
+    pointer-events: none;
+    z-index: -1;
 }
 </style>

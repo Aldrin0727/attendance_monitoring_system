@@ -34,9 +34,13 @@
 
         <!-- DataTable -->
     <div class="card p-4 mt-3">
-            <DataTable v-if="leaveRequests.length" :key="datatableKey"
+            <!-- <DataTable v-if="leaveRequests.length" :key="datatableKey"
                 class="table table-striped table-bordered display custom-table" :columns="columns" :data="leaveRequests"
-                :options="datatableOptions" />
+                :options="datatableOptions" /> -->
+
+            <DataTable :key="datatableKey" class="table table-striped table-bordered display custom-table"
+                :columns="columns" :data="leaveRequests" :options="datatableOptions" />
+
         </div>
 
     </div>
@@ -82,6 +86,7 @@ export default {
             is_modal_visible: false,
 
             columns: [
+                { title: 'Reference No.', data: 'ref_no' },
                 { title: 'Employee ID', data: 'emp_id' },
                 { title: 'Employee Name', data: 'user' },
                 { title: 'Type', data: 'leave_type',

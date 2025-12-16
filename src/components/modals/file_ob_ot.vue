@@ -25,11 +25,13 @@
                             <div class="row mb-3">
                                 <div class="col-6">
                                     <label for="user" class="form-label label-sm">Position</label>
-                                    <input type="text" id="user" class="form-control" v-model="user.position" readonly />
+                                    <input type="text" id="user" class="form-control" v-model="user.position"
+                                        readonly />
                                 </div>
                                 <div class="col-6">
                                     <label for="user" class="form-label label-sm">Department</label>
-                                    <input type="text" id="department" class="form-control" v-model="user.department_name" readonly />
+                                    <input type="text" id="department" class="form-control"
+                                        v-model="user.department_name" readonly />
                                 </div>
                             </div>
                             <div class="row mb-1">
@@ -51,9 +53,10 @@
                             <div class="row">
                                 <div class="col-12">
                                     <div>
-                                        <input type="radio" id="ob" value="OB" v-model="selectedRequestType" /> 
+                                        <input type="radio" id="ob" value="OB" v-model="selectedRequestType" />
                                         <label for="ob" class="ms-2">Official Business - OB </label>
-                                        <input type="radio" id="ot" value="OT" v-model="selectedRequestType" class="ms-5" />
+                                        <input type="radio" id="ot" value="OT" v-model="selectedRequestType"
+                                            class="ms-5" />
                                         <label for="ot" class="ms-2">Overtime - OT</label>
                                     </div>
                                 </div>
@@ -66,17 +69,19 @@
                             <hr class="mt-0">
                             <div class="row mb-0">
                                 <div class="col-6 mb-3">
-                                    <label class="form-label label-sm">Category <strong style="color: red">*</strong></label>
+                                    <label class="form-label label-sm">Category <strong
+                                            style="color: red">*</strong></label>
                                     <select v-model="ob_ot_form.selectedCategory" class="form-select" required>
                                         <option disabled value="">Select Category</option>
                                         <option value="Systems">Systems</option>
                                         <option value="Infrastructure">Infrastructure</option>
                                     </select>
                                 </div>
-                                 <div class="col-6">
-                                    <label for="user" class="form-label label-sm">Destination<strong style="color: red">*</strong></label>
+                                <div class="col-6">
+                                    <label for="user" class="form-label label-sm">Destination<strong
+                                            style="color: red">*</strong></label>
                                     <!-- <input type="text" id="user" class="form-control" v-model="ob_ot_form.destination"/> -->
-                                       <select v-model="ob_ot_form.destination" class="form-select" required>
+                                    <select v-model="ob_ot_form.destination" class="form-select" required>
                                         <option disabled value="">Select Category</option>
                                         <option value="HO">Head Office</option>
                                         <option value="Alveo">Alveo</option>
@@ -89,31 +94,37 @@
                             <div class="row mb-3">
                                 <div class="col-6">
                                     <label for="date_from" class="form-label label-sm">
-                                       Requested Date From <strong style="color: red">*</strong>
+                                        Requested Date From <strong style="color: red">*</strong>
                                     </label>
-                                    <input type="datetime-local" id="date_from" class="form-control" v-model="ob_ot_form.date_from" required />
+                                    <input type="datetime-local" id="date_from" class="form-control"
+                                        v-model="ob_ot_form.date_from" required />
                                 </div>
                                 <div class="col-6">
                                     <label for="date_to" class="form-label label-sm">
                                         Requested Date To <strong style="color: red">*</strong>
                                     </label>
-                                    <input type="datetime-local" id="date_to" class="form-control" v-model="ob_ot_form.date_to" required />
+                                    <input type="datetime-local" id="date_to" class="form-control"
+                                        v-model="ob_ot_form.date_to" required />
                                 </div>
                             </div>
 
                             <div class="row mb-3">
                                 <div class="col-12">
                                     <label for="leave_reason" class="form-label label-sm">
-                                        Reason for {{ selectedRequestType === 'OT' ? 'OT Request' : 'OB Request' }} <strong style="color: red">*</strong>
+                                        Reason for {{ selectedRequestType === 'OT' ? 'OT Request' : 'OB Request' }}
+                                        <strong style="color: red">*</strong>
                                     </label>
-                                    <textarea class="form-control" rows="1" id="leave_reason" v-model="ob_ot_form.reason" required></textarea>
+                                    <textarea class="form-control" rows="1" id="leave_reason"
+                                        v-model="ob_ot_form.reason" required></textarea>
                                 </div>
                             </div>
                             <div class="row">
                                 <div class="col-12">
-                                    <label for="leave_reason" class="form-label label-sm"> Project <strong style="color: red">*</strong>
+                                    <label for="leave_reason" class="form-label label-sm"> Project <strong
+                                            style="color: red">*</strong>
                                     </label>
-                                    <textarea class="form-control" rows="1" id="leave_reason" v-model="ob_ot_form.project" required></textarea>
+                                    <textarea class="form-control" rows="1" id="leave_reason"
+                                        v-model="ob_ot_form.project" required></textarea>
                                 </div>
                             </div>
                         </div>
@@ -147,6 +158,8 @@ export default {
         return {
             user: getUserData() || {},
             selectedRequestType: "",
+            existingRequests: [],
+
             ob_ot_form: {
                 destination: "",
                 date_from: "",
@@ -162,16 +175,61 @@ export default {
             return `${this.user.first_name} ${this.user.last_name}`.trim();
         },
     },
+    mounted() {
+        this.fetchExistingOTOB();
+    },
+
     methods: {
         closeModal() {
             this.$emit("close");
         },
+
+        fetchExistingOTOB() {
+            fetch(`${API_BASE}/get_otob_for_approval_request_date`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    emp_id: this.user.emp_id
+                })
+            })
+                .then(res => res.json())
+                .then(data => {
+                    this.existingRequests = data.alldates || [];
+                });
+        },
+
+
+        hasOTOBConflict(from, to) {
+            const newFrom = new Date(from);
+            const newTo = new Date(to);
+
+            return this.existingRequests.some(req => {
+                const oldFrom = new Date(req.req_from || req.leave_from);
+                const oldTo = new Date(req.req_to || req.leave_to);
+
+                return newFrom <= oldTo && newTo >= oldFrom;
+            });
+        },
+
 
         submitForm() {
             if (!this.selectedRequestType) {
                 Swal.fire("Error", "Please select OB or OT type", "error");
                 return;
             }
+
+            if (this.hasOTOBConflict(
+                this.ob_ot_form.date_from,
+                this.ob_ot_form.date_to
+            )) {
+                Swal.fire(
+                    "Not Allowed",
+                    "This request overlaps with an existing OB/OT request.",
+                    "warning"
+                );
+                return;
+            }
+
 
             const formData = {
                 emp_id: this.user.emp_id,
@@ -183,7 +241,7 @@ export default {
                 reason: this.ob_ot_form.reason,
                 project: this.ob_ot_form.project,
                 department: this.user.dept_code,
-                destination: this.ob_ot_form.destination 
+                destination: this.ob_ot_form.destination
             };
 
             // console.log(formData)
@@ -247,7 +305,8 @@ input:focus {
     background-color: #e9ecef !important;
 }
 
-#leave_reason:focus, #user:focus {
+#leave_reason:focus,
+#user:focus {
     background-color: #fff !important;
     font-size: 12px !important;
 }

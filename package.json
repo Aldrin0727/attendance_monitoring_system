@@ -25,6 +25,7 @@
     "datatables.net-dt": "^2.3.5",
     "datatables.net-vue3": "^3.0.4",
     "feather-icons": "^4.29.2",
+    "html2pdf.js": "^0.12.1",
     "jquery": "^3.7.1",
     "sweetalert2": "^11.26.3",
     "vue": "^3.2.13",

@@ -14,6 +14,8 @@ export const statusColors = {
   "FOR DEPARTMENT HEAD APPROVAL": "badge custom-blue text-white custom-badge fw-normal",
   "APPROVED": "badge custom-green-2 text-white custom-badge fw-normal",
   "DENIED": "badge custom-violet text-white custom-badge fw-normal",
+  "FOR HR RECORD": "badge custom-orange text-white custom-badge fw-normal",
+  "CANCELLED": "badge custom-red-2 text-white custom-badge fw-normal",
 };
 
 export const leave_type_Colors = {
@@ -25,8 +27,9 @@ export const leave_type_Colors = {
 export const ob_ot_Colors = {
   "OT": "badge custom-info text-white custom-badge fw-normal",
   "OB": "badge custom-orange-2 text-white custom-badge fw-normal",
-   "Systems": "badge custom-orange-2 text-black custom-badge fw-normal",
-"Infrastracture": "badge custom-green text-dark custom-badge fw-normal",
+  "Systems": "badge custom-orange-2 text-white custom-badge fw-normal",
+  "Infrastructure": "badge custom-green text-dark custom-badge fw-normal",
+  
 };
 
 export const attendance_Colors = {

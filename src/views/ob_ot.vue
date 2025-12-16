@@ -24,7 +24,7 @@
 
         <!-- DataTable -->
         <div class="card p-4 mt-3">
-            <DataTable v-if="ob_ot_Requests.length" :key="datatableKey"
+            <DataTable :key="datatableKey"
                 class="table table-striped table-bordered display custom-table" :columns="columns"
                 :data="ob_ot_Requests" :options="datatableOptions" />
         </div>
@@ -74,6 +74,7 @@ export default {
             selectedRequestOBOT: null,
 
             columns: [
+                { title: "Reference No. ", data: "ref_number" },
                 { title: "Employee ID", data: "emp_id" },
                 { title: "Employee Name", data: "fullName" },
                 {
