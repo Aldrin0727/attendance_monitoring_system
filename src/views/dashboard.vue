@@ -43,11 +43,9 @@
 
 
     <!-- File a Leave Button (right aligned) -->
-    <div
-    :class="user.job_title === 'Department Head'
+    <div :class="user.job_title === 'Department Head'
       ? 'col-lg-6 text-end'
-      : 'col-lg-12 text-end'"
-  >
+      : 'col-lg-12 text-end'">
       <button class="btn btn-secondary" @click="file_leave_btn">
         <font-awesome-icon :icon="['fas', 'circle-plus']" class="" /> File a Leave
       </button>
@@ -83,11 +81,17 @@
                     <div class="progress-bar used-leave-bar" role="progressbar" :style="{ width: vlUsedPercent + '%' }"
                       :aria-valuenow="vl_used" aria-valuemin="0" :aria-valuemax="vl_total"></div>
                   </div>
-
                   <div class="d-flex justify-content-between mt-3">
                     <span class="text-muted">Remaining Leave</span>
-                    <span class="fw-bold">{{ vlRemaining }} days</span>
+                    <span class="fw-bold" :class="{ 'text-danger': vlExceeded }">
+                      {{ vlRemaining }} day(s)
+                    </span>
                   </div>
+
+                  <small v-if="vlExceeded" class="exceed-warning">
+                    ⚠ Exceeded by {{ Math.abs(vlRemaining) }} day(s) – salary deduction applies
+                  </small>
+
                   <div class="progress mt-1" style="height: 10px;">
                     <div class="progress-bar bg-success" role="progressbar" :style="{ width: vlRemainingPercent + '%' }"
                       :aria-valuenow="vlRemaining" aria-valuemin="0" :aria-valuemax="vl_total"></div>
@@ -118,8 +122,15 @@
 
                   <div class="d-flex justify-content-between mt-3">
                     <span class="text-muted">Remaining Leave</span>
-                    <span class="fw-bold">{{ slRemaining }} days</span>
+                    <span class="fw-bold" :class="{ 'text-danger': slExceeded }">
+                      {{ slRemaining }} day(s)
+                    </span>
                   </div>
+
+                  <small v-if="slExceeded" class="exceed-warning">
+                    ⚠ Exceeded by {{ Math.abs(slRemaining) }} day(s) – salary deduction applies
+                  </small>
+
                   <div class="progress mt-1" style="height: 10px;">
                     <div class="progress-bar bg-success" role="progressbar" :style="{ width: slRemainingPercent + '%' }"
                       :aria-valuenow="slRemaining" aria-valuemin="0" :aria-valuemax="sl_total"></div>
@@ -199,7 +210,7 @@
     </div>
   </div>
   <file_leave_modal v-if="is_file_leave_modal_visible" :isVisible="is_file_leave_modal_visible"
-    @close="close_file_leave_modal" />
+    @close="close_file_leave_modal" @leave-submitted="onLeaveSubmitted" />
 </template>
 
 <script>
@@ -230,6 +241,8 @@ export default {
 
       vl_total: 15,
       vl_used: 0,
+      vl_remaining: 0,
+      sl_remaining: 0,
       sl_total: 15,
       sl_used: 0,
 
@@ -264,7 +277,7 @@ export default {
 
     this.refreshInterval = setInterval(() => {
       this.refreshDashboard();
-    }, 180000); //ms
+    }, 60000); //ms
 
   },
   watch: {
@@ -276,12 +289,12 @@ export default {
 
   computed: {
     vlRemaining() {
-      return Math.max(this.vl_total - this.vl_used, 0);
-
+      return this.vl_remaining;
     },
     slRemaining() {
-      return Math.max(this.sl_total - this.sl_used, 0);
+      return this.sl_remaining;
     },
+
     vlUsedPercent() {
       if (!this.vl_total) return 0;
       return Math.min((this.vl_used / this.vl_total) * 100, 100);
@@ -298,9 +311,26 @@ export default {
       if (!this.sl_total) return 0;
       return Math.min((this.slRemaining / this.sl_total) * 100, 100);
     },
+    vlExceeded() {
+      return this.vlRemaining < 0;
+    },
+    slExceeded() {
+      return this.slRemaining < 0;
+    },
+
+
   },
 
   methods: {
+    onLeaveSubmitted() {
+      // close modal (safety)
+      this.is_file_leave_modal_visible = false;
+
+      // refresh everything immediately
+      this.fetchForApprovalCount();
+      this.fetchLeaveEvents();
+      this.fetchForApprovalCountOB_OT();
+    },
     refreshDashboard() {
       // this.fetchOBOTEvents();
       this.fetchForApprovalCount();
@@ -381,19 +411,51 @@ export default {
                 ev.title.includes("OB") ? "#b889f2" :
                   ev.title.includes("OT") ? "#50a6c0" :
                     "#ccc";
+        let halfDayLabel = "";
+        if (ev.extendedProps?.isHalfDay) {
+
+          halfDayLabel = `
+            <span style="color:#d62828;font-weight:600;">
+              (Half Day – ${ev.extendedProps.halfDayType})
+            </span>
+          `;
+        }
+
 
         return `
-        <div style="
-            background: #fafafa;
-            padding: 10px 14px;
-            margin-bottom: 8px;
-            border-radius: 10px;
-            border-left: 5px solid ${color};
-            box-shadow: box-shadow: rgba(0, 0, 0, 0.24) 0px 3px 8px;
-        ">
-          <span style="font-weight: 600;">${ev.title}</span>
-        </div>
-      `;
+  <div style="
+    background:#fafafa;
+    padding:10px 14px;
+    margin-bottom:8px;
+    border-radius:10px;
+    border-left:5px solid ${color};
+    box-shadow: rgba(0,0,0,0.15) 0px 3px 6px;
+  ">
+    <div style="
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:10px;
+    ">
+      <div style="font-weight:600; color:#333;">
+        ${ev.title}
+      </div>
+
+      ${ev.extendedProps?.isHalfDay
+            ? `<div style="
+                font-size:13px;
+                font-weight:600;
+                color:#d62828;
+                white-space:nowrap;
+              ">
+                Half Day – ${ev.extendedProps.halfDayType}
+             </div>`
+            : ""
+          }
+    </div>
+  </div>
+`;
+
       })
         .join("");
 
@@ -466,11 +528,17 @@ export default {
         .then(data => {
           // console.log(data)
           if (data.success) {
+
             this.for_dept_head_approval_pending = data.fapp_count || 0;
             this.for_dept_head = data.app_count || 0;
             // console.log(data.used_vl)
             this.vl_used = data.used_vl;
+            this.vl_remaining = data.vl_remaining;
+            this.sl_remaining = data.sl_remaining;
             this.sl_used = data.used_sl;
+
+
+            // console.log(this.sl_remaining)
           } else {
             console.error('for_approval_count error:', data.error);
           }
@@ -501,6 +569,7 @@ export default {
             return;
           }
 
+
           let events = [];
           // LEAVES
           (data.dateall || []).forEach(item => {
@@ -508,14 +577,14 @@ export default {
             const start = new Date(item.leave_from);
             const end = new Date(item.leave_to);
 
-            const colorClass = leave_type_Colors[item.leave_type] || "badge default-class";
-            const statusLetter = this.getStatusLetter(item.status);
-            const firstName = item.user?.split(" ")[0] || "User";
+            start.setHours(0, 0, 0, 0);
+            end.setHours(0, 0, 0, 0);
 
             let current = new Date(start);
 
-            current.setHours(0, 0, 0, 0);
-            end.setHours(0, 0, 0, 0);
+            const colorClass = leave_type_Colors[item.leave_type] || "badge default-class";
+            const statusLetter = this.getStatusLetter(item.status);
+            const firstName = item.user?.split(" ")[0] || "User";
 
             while (current <= end) {
 
@@ -523,15 +592,23 @@ export default {
                 current.setDate(current.getDate() + 1);
                 continue;
               }
+              const isHalfDay =
+                !!item.isHalfday &&
+                current.getTime() === start.getTime();
 
               events.push({
                 title: `${item.leave_type} - ${firstName} <b>${statusLetter}</b>`,
                 date: new Date(current),
                 classNames: [colorClass],
+                extendedProps: {
+                  isHalfDay,
+                  halfDayType: isHalfDay ? item.isHalfday : null
+                }
               });
 
               current.setDate(current.getDate() + 1);
             }
+
           });
 
 
@@ -578,6 +655,18 @@ export default {
 @import url(../assets/css/buttons.css);
 @import url(../../public/global.css);
 
+.exceeded-card {
+  border: 1px solid #df7a8a;
+  background-color: #fff0f0;
+}
+
+.exceed-warning {
+  display: block;
+  margin-top: 6px;
+  font-size: 12px;
+  color: #df7a8a;
+  font-weight: 600;
+}
 
 .modal {
   top: 0;

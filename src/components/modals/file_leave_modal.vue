@@ -62,8 +62,8 @@
 
                                 <hr class="mt-0">
 
-                                <div class="row mb-0">
-                                    <div class="col-6 mb-3">
+                                <div class="row">
+                                    <div class="col-6">
                                         <label class="form-label label-sm">
                                             Type of Leave <strong style="color: red">*</strong>
                                         </label>
@@ -75,17 +75,17 @@
                                         </select>
                                     </div>
 
-                                    <div class="col-4">
+                                    <div class="col-4" v-if="showLeaveDetails">
                                         <label class="form-label label-sm">Half Day? <strong
                                                 style="color: red">*</strong></label>
                                         <select v-model="leaveForm.half_day" class="form-select">
                                             <option value="">No</option>
-                                            <option value="morning">Yes - Morning</option>
-                                            <option value="afternoon">Yes - Afternoon</option>
+                                            <option value="AM">Yes - Morning</option>
+                                            <option value="PM">Yes - Afternoon</option>
                                         </select>
                                     </div>
 
-                                    <div class="col-2">
+                                    <div class="col-2" v-if="showLeaveDetails">
                                         <label class="form-label label-sm">Total Days</label>
                                         <input type="text" class="form-control leave_days"
                                             :value="leaveForm.total_leave_days" readonly />
@@ -93,7 +93,7 @@
                                 </div>
 
                                 <!-- Date Selection Section -->
-                                <div class="row mb-3">
+                                <div class="row mb-3 mt-3" v-if="showLeaveDetails">
                                     <div class="col-6">
                                         <label for="date_from" class="form-label label-sm">
                                             Date of Leave From <strong style="color: red">*</strong>
@@ -110,7 +110,7 @@
                                     </div>
                                 </div>
 
-                                <div class="row mb-2">
+                                <div class="row mb-2" v-if="showLeaveDetails">
                                     <div class="col-12">
                                         <label for="leave_reason" class="form-label label-sm">
                                             Reason for leave <strong style="color: red">*</strong>
@@ -180,11 +180,12 @@ export default {
                 const d = String(today.getDate()).padStart(2, '0');
                 return `${y}-${m}-${d}`;
             }
-
             return null;
-
-
         },
+         showLeaveDetails() {
+            return !!this.selectedTypeofLeave;
+        },
+
 
 
     },
@@ -209,7 +210,7 @@ export default {
             })
                 .then(res => res.json())
                 .then(data => {
-                    console.log(data)
+                    // console.log(data)
                     this.existingLeaves = data.alldates || [];
 
                 });
@@ -219,7 +220,6 @@ export default {
 
             const x = new Date(d);
 
-            // FORCE UTC — no timezone shifting
             return new Date(
                 Date.UTC(
                     x.getUTCFullYear(),
@@ -258,9 +258,6 @@ export default {
 
             this.$emit("close");
         },
-
-
-
 
         calculateTotalLeaveDays() {
             const from = this.leaveForm.date_from;
@@ -358,6 +355,7 @@ export default {
 
 
         submitForm() {
+
             if (!this.leaveForm.total_leave_days || Number(this.leaveForm.total_leave_days) <= 0) {
                 Swal.fire("Invalid", "No valid leave days selected (weekends are excluded).", "warning");
                 return;
@@ -372,7 +370,9 @@ export default {
                 return;
             }
 
-
+            // -------------------------------
+            // LEAVE TYPE DATE RULES
+            // -------------------------------
             if (this.selectedTypeofLeave === 'VL') {
                 const start = new Date(this.leaveForm.date_from);
                 const now = new Date();
@@ -390,7 +390,6 @@ export default {
                 }
             }
 
-            // SL cannot be a future date
             if (this.selectedTypeofLeave === 'SL') {
                 const start = new Date(this.leaveForm.date_from);
                 const now = new Date();
@@ -408,53 +407,86 @@ export default {
                 }
             }
 
+            // COMMON 
             const requestedDays = Number(this.leaveForm.total_leave_days);
             const balanceType = this.getBalanceType(this.selectedTypeofLeave);
             const remaining = Number(this.remainingLeaves[balanceType] || 0);
 
+            const proceedSubmit = (isSalaryDeduction = false, excessDays = 0) => {
+                const formData = {
+                    selectedTypeofLeave: this.selectedTypeofLeave,
+                    fullName: this.fullName,
+                    total_leave_days: requestedDays,
+                    date_from: this.leaveForm.date_from,
+                    date_to: this.leaveForm.date_to,
+                    leave_reason: this.leaveForm.leave_reason,
+                    department_name: this.user.dept_code,
+                    emp_id: this.user.emp_id,
+                    halfday: this.leaveForm.half_day,
+
+                    is_salary_deduction: isSalaryDeduction ? 1 : 0,
+                    excess_days: excessDays
+                };
+
+                console.log(formData)
+
+                fetch(`${API_BASE}/create_leave`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(formData),
+                })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            Swal.fire(
+                                "Success",
+                                isSalaryDeduction
+                                    ? "Leave filed. Excess days will be deducted from salary."
+                                    : "Leave filed successfully.",
+                                "success"
+                            );
+                            this.$emit("leave-submitted");
+                            this.closeModal();
+                        } else {
+                            Swal.fire("Error", data.error || "Failed to submit leave", "error");
+                        }
+                    })
+                    .catch(() => {
+                        Swal.fire("Error", "Something went wrong", "error");
+                    });
+            };
+
+            // EXCEEDS BALANCE → CONFIRM
             if (requestedDays > remaining) {
-                Swal.fire(
-                    "Not Allowed",
-                    `You only have ${remaining} remaining ${balanceType} day(s).`,
-                    "warning"
-                );
+                const excessDays = requestedDays - remaining;
+
+                Swal.fire({
+                    icon: "warning",
+                    title: "Leave Balance Exceeded",
+                    html: `
+                You only have <b>${remaining}</b> remaining ${balanceType} day(s).<br><br>
+                <b>${excessDays}</b> day(s) will be treated as
+                <span style="color:red;font-weight:bold;">salary deduction (unpaid leave)</span>.<br><br>
+                Do you want to proceed?
+            `,
+                    showCancelButton: true,
+                    confirmButtonText: "Yes, proceed",
+                    cancelButtonText: "Cancel",
+                    confirmButtonColor: "#df7a8a"
+                }).then(result => {
+                    if (result.isConfirmed) {
+                        proceedSubmit(true, excessDays);
+                    }
+                });
+
                 return;
             }
 
-            const formData = {
-                selectedTypeofLeave: this.selectedTypeofLeave,
-                fullName: this.fullName,
-                total_leave_days: this.leaveForm.total_leave_days,
-                date_from: this.leaveForm.date_from,
-                date_to: this.leaveForm.date_to,
-                leave_reason: this.leaveForm.leave_reason,
-                department_name: this.user.dept_code,
-                emp_id: this.user.emp_id,
-            };
-
-            fetch(`${API_BASE}/create_leave`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify(formData),
-            })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        Swal.fire("Success", "Leave filed successfully", "success");
-
-                    } else {
-                        Swal.fire("Error", data.error || "Failed to submit leave", "error");
-                    }
-                })
-                .catch(error => {
-                    console.error("Error submitting form:", error);
-                    Swal.fire("Error", "Something went wrong", "error");
-                });
-
-            this.closeModal();
+            proceedSubmit(false, 0);
         },
+
+
+
         fetchRemainingLeaves() {
             fetch(`${API_BASE}/get_remaining_leaves`, {
                 method: "POST",
@@ -478,7 +510,7 @@ export default {
     },
     mounted() {
         this.fetchExistingLeaves();
-        this.fetchRemainingLeaves(); 
+        this.fetchRemainingLeaves();
     }
 };
 </script>

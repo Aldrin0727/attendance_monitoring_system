@@ -3,6 +3,10 @@ import MySQLdb.cursors                                 # type: ignore
 from plugins import mysql 
 from datetime import datetime
 from config import Config
+
+from plugins import mail
+from emails import send_vl_leave_request_email
+
 leave_bp = Blueprint('leave_bp', __name__)
 
 
@@ -20,6 +24,8 @@ def add_leave_details():
         leave_to = data.get("date_to")
         leave_reason = data.get("leave_reason")
         emp_id = data.get("emp_id")
+        halfday = data.get("halfday")
+        max_leave = 15
         # approver = 'test'
        
         year = datetime.now().year
@@ -45,11 +51,25 @@ def add_leave_details():
 
         newref_No = f"{ref_var}{year}{str(ref_sequence).zfill(5)}"
 
+        cursor.execute("""
+            SELECT COALESCE(SUM(leave_number), 0) as vl_leave from Leave_Details where emp_id = %s and status = 'APPROVED' and leave_type IN ("VL","EL")
+        """, (emp_id,))  
+        vl_leave = cursor.fetchone()["vl_leave"]
+
+        vl_remaining = max_leave - vl_leave
+
+        cursor.execute("""
+            SELECT COALESCE(SUM(leave_number), 0) as sl_leave from Leave_Details where emp_id = %s and status = 'APPROVED' and leave_type IN ("SL")
+        """, (emp_id,))  
+        sl_leave = cursor.fetchone()["sl_leave"]
+
+        sl_remaining = max_leave - sl_leave
+        
         cursor.execute(
-            "INSERT INTO Leave_Details (`user`,ref_no,leave_type,leave_number,leave_from,leave_to,leave_reason,date_created,department,status,emp_id) "
-            "VALUES (%s, %s, %s, %s, %s, %s, %s, NOW(), %s, %s, %s)",
+            "INSERT INTO Leave_Details (`user`,ref_no,leave_type,leave_number,leave_from,leave_to,leave_reason,date_created,department,status,emp_id,isHalfday,vl_remaining,sl_remaining) "
+            "VALUES (%s, %s, %s, %s, %s, %s, %s, NOW(), %s, %s, %s, %s, %s, %s)",
             (username, newref_No, leave_type, total_leave, leave_from, leave_to, leave_reason,
-            department, 'FOR DEPARTMENT HEAD APPROVAL', emp_id)
+            department, 'FOR DEPARTMENT HEAD APPROVAL', emp_id, halfday,vl_remaining,sl_remaining)
         )
 
         # cursor.execute(
@@ -64,13 +84,17 @@ def add_leave_details():
             ('LEAVE SUBMITTED', newref_No, 'New Leave Request Has been submitted', username)
         )
 
+
+
         mysql.connection.commit()
         cursor.close()
 
         return jsonify({
             "message": "Submitted Leave is now For Approval.",
             "success": True,
-            "ref_no": newref_No
+            "ref_no": vl_remaining,
+            "vl" : vl_remaining,
+            "sl" : sl_remaining
         }), 201
 
     except Exception as e:
@@ -85,6 +109,7 @@ def get_count_approval():
         position = data.get("job_title")
         department = data.get("department")
         emp_id = data.get("emp_id")
+        max_leave = 15
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
 
        
@@ -127,10 +152,37 @@ def get_count_approval():
         """, (emp_id,))  
         used_sl = cursor.fetchone()["used_sl"]
 
+        # cursor.execute("""
+        #     SELECT leave_number as vl_remaining from Leave_Details where emp_id = %s and status = 'APPROVED' AND leave_type IN ("VL","EL") ORDER BY id DESC
+        # """, (emp_id,))  
+        # vl_result = cursor.fetchone()
+        # Vl_remaining = vl_result["vl_remaining"] if vl_result else 0
+
+        # cursor.execute("""
+        #     SELECT leave_number as sl_remaining from Leave_Details where emp_id = %s and status = 'APPROVED' AND leave_type IN ("SL") ORDER BY id DESC
+        # """, (emp_id,))  
+        # sl_result = cursor.fetchone()
+        # sl_remaining = sl_result["sl_remaining"] if sl_result else 0
+
+        cursor.execute("""
+            SELECT COALESCE(SUM(leave_number), 0) as used_vl from Leave_Details where emp_id = %s and status = 'APPROVED' AND leave_type IN ('VL','EL')
+        """, (emp_id,))  
+        used_vl = cursor.fetchone()["used_vl"]
+
+        remaining_vl = max_leave - used_vl 
+
+        cursor.execute("""
+            SELECT COALESCE(SUM(leave_number), 0) as used_sl from Leave_Details where emp_id = %s and status = 'APPROVED' AND leave_type IN ('SL')
+        """, (emp_id,))  
+        used_sl = cursor.fetchone()["used_sl"]
+
+        remaining_sl = max_leave - used_sl 
+
         cursor.close()
 
         return jsonify({
-            "app_count": app_count, "success": True,"fapp_count":fapp_count,"fullName": username, "used_vl":used_vl,"used_sl":used_sl
+            "app_count": app_count, "success": True,"fapp_count":fapp_count,"fullName": username, 
+            "used_vl":used_vl,"used_sl":used_sl,"vl_remaining" : remaining_vl,"sl_remaining" :remaining_sl
             }), 201
     except Exception as e:
         return jsonify({"error": str(e)}),500
@@ -186,13 +238,20 @@ def get_all_leave_details():
         
         if position == 'Department Head' and status == 'FOR DEPARTMENT HEAD APPROVAL':
             base_query = f"""
-                    SELECT * ,
-                    (SELECT `{Config.MYSQL_DB2}`.departments.department from Leave_Details LEFT JOIN `{Config.MYSQL_DB2}`.departments ON Leave_Details.department = dept_code
-                    where Leave_Details.department = "ITD" group by department) as dept_code
-                    FROM Leave_Details 
+                   SELECT *,
+                  CAST(DATE(Leave_Details.leave_from) AS CHAR) AS leave_from,
+    CAST(DATE(Leave_Details.leave_to) AS CHAR)   AS leave_to,
+                        (
+                            SELECT d.department
+                            FROM `{Config.MYSQL_DB2}`.departments d
+                            WHERE d.dept_code = Leave_Details.department
+                            LIMIT 1
+                        ) AS dept_code
+                    FROM Leave_Details
                     LEFT JOIN `{Config.MYSQL_DB2}`.users
                         ON Leave_Details.emp_id = ticketing_dev.users.emp_id
-                    WHERE Leave_Details.department = %s
+                    WHERE Leave_Details.department = %s;
+
                     """
             values = [department]
         else:          
@@ -200,7 +259,8 @@ def get_all_leave_details():
             #     SELECT * from Leave_Details WHERE user = %s
             # """
             base_query = f"""
-                    SELECT * ,
+                   SELECT *,CAST(DATE(Leave_Details.leave_from) AS CHAR) AS leave_from,
+    CAST(DATE(Leave_Details.leave_to) AS CHAR)   AS leave_to,
                     (SELECT `{Config.MYSQL_DB2}`.departments.department from Leave_Details LEFT JOIN `{Config.MYSQL_DB2}`.departments ON Leave_Details.department = dept_code
                     where Leave_Details.department = "ITD" group by department) as dept_code
                     FROM Leave_Details 
@@ -220,7 +280,16 @@ def get_all_leave_details():
         
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
         cursor.execute(base_query, tuple(values))
+
+       
+
+
         all_list =  cursor.fetchall()
+        for row in all_list:
+            if row.get("leave_from"):
+                row["leave_from"] = row["leave_from"].strftime("%Y-%m-%d")
+            if row.get("leave_to"):
+                row["leave_to"] = row["leave_to"].strftime("%Y-%m-%d")
 
         cursor.close()
         return jsonify({"all_list":all_list, "success": True}), 201
@@ -230,21 +299,87 @@ def get_all_leave_details():
 @leave_bp.route('/approved_deny_leaves', methods=['POST'])
 def update_approved__deny_leaves():
     try:  
-        data = request.get_json()
-        args = data.get("args")
-        ref_no = data.get("ref_no")
-        username = data.get("user")
+        args = request.form.get("args")
+        ref_no = request.form.get("ref_no")
+        username = request.form.get("user")
+        emp_id = request.form.get("emp_id")
+        pdf_file = request.files.get("pdf")
+
+        max_leave = 15
+        
 
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+
+        detail_qry =  f"""
+                SELECT  
+                *,
+                (SELECT `{Config.MYSQL_DB2}`.departments.department from Leave_Details LEFT JOIN `{Config.MYSQL_DB2}`.departments ON Leave_Details.department = dept_code
+                    where Leave_Details.department = "ITD" group by department) as dept_code
+                from Leave_Details LEFT JOIN `{Config.MYSQL_DB2}`.users ON Leave_Details.emp_id = ticketing_dev.users.emp_id where 
+                ref_no = %s 
+                """
+        values = [ref_no]
+        cursor.execute(detail_qry, tuple(values))
+        all_list =  cursor.fetchone()
+        #get number of leave
+        cursor.execute("""
+            SELECT leave_number as used_count from Leave_Details where ref_no = %s 
+        """, (ref_no,))  
+        row = cursor.fetchone() or {}
+        used_count = row.get("used_count", 0)
+
+        cursor.execute("""
+            SELECT COALESCE(SUM(leave_number), 0) as used_vl from Leave_Details where emp_id = %s and status = 'APPROVED' AND leave_type IN ('VL','EL')
+        """, (emp_id,))  
+        used_vl = cursor.fetchone()["used_vl"]
+
+        remaining_vl = max_leave - (used_vl + used_count)
+
+        cursor.execute("""
+            SELECT COALESCE(SUM(leave_number), 0) as used_sl from Leave_Details where emp_id = %s and status = 'APPROVED' AND leave_type IN ('SL')
+        """, (emp_id,))  
+        used_sl = cursor.fetchone()["used_sl"]
+
+        remaining_sl = max_leave - (used_sl + used_count)
+
+
+       
+
+        cursor.execute("""
+            SELECT leave_type as leave_type from Leave_Details where ref_no = %s
+        """, (ref_no,))  
+        leave_type = cursor.fetchone()["leave_type"]
+
         if args == "APPROVED" :
-            cursor.execute(
-                "UPDATE  Leave_Details set status = %s,approved_by = %s, date_approved = NOW() WHERE ref_no = %s",(args, username, ref_no))
+            
+            if leave_type == 'SL':
+                cursor.execute(
+                "UPDATE  Leave_Details set status = %s,approved_by = %s, sl_remaining = %s, date_approved = NOW() WHERE ref_no = %s",(args, username, remaining_sl, ref_no))
+            else:
+                cursor.execute(
+                "UPDATE  Leave_Details set status = %s,approved_by = %s, vl_remaining = %s, date_approved = NOW() WHERE ref_no = %s",(args, username, remaining_vl, ref_no))
             
             cursor.execute(
                 """INSERT INTO leave_history (module, ref_no, action, `user`, history_date) 
                 VALUES (%s, %s, %s, %s, NOW())""",
                 ('LEAVE APPROVAL', ref_no, 'Approved Leave', username)
             )
+
+            mysql.connection.commit() 
+
+            # RE-FETCH updated ro
+            cursor.execute(detail_qry, (ref_no,))
+            all_list = cursor.fetchone()
+
+            # Send email AFTER commit + refetch
+            send_vl_leave_request_email(
+                mail,
+                all_list['user'], all_list['position'], all_list['dept_code'],
+                all_list['leave_number'], all_list['leave_from'], all_list['leave_to'],
+                all_list['leave_reason'], all_list['email'], all_list['leave_type'],
+                pdf_file
+            )
+ 
         elif args == "CANCELLED" :
             cursor.execute(
                 "UPDATE  Leave_Details set status = %s WHERE ref_no = %s",(args, ref_no))
@@ -267,9 +402,13 @@ def update_approved__deny_leaves():
         mysql.connection.commit()
         cursor.close()
 
-        return jsonify({"success": True,"args":args,"ref_no":ref_no}), 201
+        return jsonify({"success": True,"args":args,"leave_type":leave_type,"remaining_vl":remaining_vl}), 201
+    # "ref_no":all_list,
     except Exception as e:
         return jsonify({"error": str(e)}),500
+    
+
+
     
 @leave_bp.route('/date_calendar', methods=['POST'])
 def get_calendar_date():
@@ -323,23 +462,36 @@ def update_denied_leaves():
         date_from = data.get("date_from")
         date_to = data.get("date_to")
         reason = data.get("leave_reason")
+        leave_number = data.get("leave_number")
         fullName = data.get("fullName")
 
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
-        cursor.execute(
-            "UPDATE  Leave_Details set leave_from = %s, leave_to = %s, leave_reason = %s, status = %s WHERE ref_no = %s",(date_from, date_to, reason, "FOR DEPARTMENT HEAD APPROVAL", ref_number))
-        
-        cursor.execute(
-                """INSERT INTO leave_history (module, ref_no, action, `user`, history_date) 
-                VALUES (%s, %s, %s, %s, NOW())""",
-                ('UPDATE LEAVE', ref_number, 'Update Leave details', fullName))
-        
+
+        cursor.execute("""
+            UPDATE Leave_Details
+            SET leave_from = %s,
+                leave_to = %s,
+                leave_reason = %s,
+                leave_number = %s,
+                status = %s,
+                approved_by = NULL,
+                date_approved = NULL
+            WHERE ref_no = %s
+        """, (date_from, date_to, reason, leave_number, "FOR DEPARTMENT HEAD APPROVAL", ref_number))
+
+        cursor.execute("""
+            INSERT INTO leave_history (module, ref_no, action, `user`, history_date)
+            VALUES (%s, %s, %s, %s, NOW())
+        """, ('UPDATE LEAVE', ref_number, 'Updated denied leave and re-submitted for approval', fullName))
+
         mysql.connection.commit()
         cursor.close()
 
         return jsonify({"success": True}), 201
     except Exception as e:
-        return jsonify({"error": str(e)}),500
+        mysql.connection.rollback()
+        return jsonify({"error": str(e)}), 500
+
 
 @leave_bp.route('/get_remaining_leaves', methods=['POST'])
 def get_remaining_leaves():

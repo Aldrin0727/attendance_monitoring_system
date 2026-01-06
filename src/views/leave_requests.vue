@@ -143,10 +143,10 @@ export default {
     watch: {
         status(newStatus) {
             this.selectedStatus = newStatus;  // Update local status when prop changes
-            this.fetchUserLeaveRequests();  // Re-fetch data
+            this.fetchUserLeaveRequests();
         },
         job_title(newJobTitle) {
-            this.fetchUserLeaveRequests();  // Re-fetch data when job title changes
+            this.fetchUserLeaveRequests();  
         }
     },
     methods: {
@@ -174,6 +174,7 @@ export default {
                 .then(response => response.json())
                 .then(data => {
                     // console.log(data)
+                    // console.log(data.all_list.date_leave_from)
                     this.leaveRequests = data.all_list || [];
                     this.datatableKey++;  // Re-render the DataTable
                 })
