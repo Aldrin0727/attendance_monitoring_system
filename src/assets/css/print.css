@@ -92,3 +92,8 @@
 .value.box {
     min-height: 40px;
 }
+
+.text-danger {
+    color: #d62828;
+    font-weight: 600;
+}

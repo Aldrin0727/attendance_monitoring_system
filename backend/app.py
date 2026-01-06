@@ -4,10 +4,11 @@ from flask_mysqldb import MySQL # type: ignore
 import MySQLdb.cursors # type: ignore
 from config import Config # type: ignore
 from dotenv import load_dotenv # type: ignore
+from flask_cors import cross_origin # type: ignore
 
 import os
 import logging
-from plugins import mysql  
+from plugins import mysql, mail
 
 load_dotenv()
 
@@ -21,6 +22,7 @@ CORS(app)
 CORS(app, resources={r"/*": {"origins": "http://0.0.0.0"}}, supports_credentials=True)
 
 mysql = MySQL(app)
+mail.init_app(app)
 
 
 logging.basicConfig(level=logging.INFO)

@@ -3,7 +3,7 @@
 
         <!-- HEADER -->
         <div class="header">
-            <h2>LEAVE REQUEST FORM</h2>
+            <h2>{{ leaveType }} Form</h2>
             <p class="subtitle">For HR Record</p>
         </div>
 
@@ -60,7 +60,11 @@
                 </div>
             </div>
 
-            <div class="grid-2">
+            <div class="grid-3">
+                <div class="field">
+                    <label>Date Submitted</label>
+                    <div class="value">{{ formatDateTime(request.date_created) }}</div>
+                </div>
                 <div class="field">
                     <label>Date From</label>
                     <div class="value">{{ formatDate(request.leave_from) }}</div>
@@ -90,7 +94,7 @@
                 </div>
                 <div class="field">
                     <label>Date Approved</label>
-                    <div class="value">{{ formatDate(request.date_approved) }}</div>
+                    <div class="value">{{ formatDateTime(request.date_approved) }}</div>
                 </div>
                 <div class="field">
                     <label>Status</label>
@@ -98,6 +102,43 @@
                 </div>
             </div>
         </div>
+
+        <!-- LEAVE BALANCE SUMMARY -->
+        <div class="card">
+            <div class="card-title mb-0">LEAVE BALANCE SUMMARY</div>
+
+            <div class="grid-3">
+                <div class="field">
+                    <label>
+                        Balance Before
+                        <small>({{ leaveType }})</small>
+                    </label>
+                    <div class="value">
+                        {{ balanceBefore }}
+                    </div>
+                </div>
+
+                <div class="field">
+                    <label>Leave Applied</label>
+                    <div class="value">
+                        {{ leaveApplied }}
+                    </div>
+                </div>
+
+                <div class="field">
+                    <label>Balance After</label>
+                    <div class="value" :class="{ 'text-danger': Number(balanceAfter) < 0 }">
+                        {{ balanceAfter }}
+                    </div>
+                </div>
+            </div>
+
+            <small v-if="Number(balanceAfter) < 0" class="text-danger"
+                style="font-weight:600; margin-top:6px; display:block;">
+                ⚠ Excess leave subject to salary deduction
+            </small>
+        </div>
+
 
     </div>
 </template>
@@ -107,20 +148,77 @@ export default {
     props: { request: Object },
     computed: {
         leaveType() {
-            const map = {
-                VL: 'Vacation Leave',
-                SL: 'Sick Leave',
-                EL: 'Emergency Leave'
+            const map = { VL: "Vacation Leave", SL: "Sick Leave", EL: "Emergency Leave" };
+            return map[this.request.leave_type] || this.request.leave_type;
+        },
+
+        // Leave applied (safe number)
+        leaveApplied() {
+            return Number(this.request.leave_number || 0);
+        },
+
+        // Remaining AFTER approval (galing DB)
+        remainingAfter() {
+            if (this.request.leave_type === "SL") {
+                return Number(this.request.sl_remaining || 0);
             }
-            return map[this.request.leave_type] || this.request.leave_type
-        }
+            // VL & EL share VL balance
+            return Number(this.request.vl_remaining || 0);
+        },
+
+        // Balance After = stored remaining (AFTER approval)
+        balanceAfter() {
+            return this.remainingAfter;
+        },
+
+        // Balance Before = remainingAfter + leaveApplied
+        balanceBefore() {
+            return this.remainingAfter + this.leaveApplied;
+        },
     },
+
     methods: {
         formatDate(d) {
             if (!d) return '-'
             const date = new Date(d)
-            return date.toLocaleDateString('en-GB') // dd/mm/yyyy
-        }
+            return date.toLocaleDateString('en-PH') // dd/mm/yyyy
+        },
+
+        formatDateTime(date) {
+            if (!date) return '';
+
+            // Example input:
+            // "Thu, 18 Dec 2025 13:51:52 GMT"
+
+            const parts = date.split(' ');
+            const day = parts[1];
+            const month = parts[2];
+            const year = parts[3];
+            const time = parts[4]; // 13:51:52
+
+            return `${year}-${this.monthToNumber(month)}-${day} ${time}`;
+        },
+
+//         formatDateTime(date) {
+//   if (!date) return '-';
+
+//   const d = new Date(date);
+//   if (isNaN(d.getTime())) return '-';
+
+//   const pad = (n) => String(n).padStart(2, '0');
+//   return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+// },
+
+
+        monthToNumber(month) {
+            const map = {
+                Jan: '01', Feb: '02', Mar: '03', Apr: '04',
+                May: '05', Jun: '06', Jul: '07', Aug: '08',
+                Sep: '09', Oct: '10', Nov: '11', Dec: '12'
+            };
+            return map[month];
+        },
+
     }
 }
 </script>

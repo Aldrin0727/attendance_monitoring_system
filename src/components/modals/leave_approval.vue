@@ -66,16 +66,39 @@
                                 </div>
                             </div>
                             <div class="row mb-3">
-                                <div class="col-6">
+                                <!-- <div class="col-6">
                                     <label class="form-label label-sm">Date of Leave From</label>
                                     <input type="date" class="form-control" v-model="editableLeave.leave_from"
                                         :readonly="!canUpdate" :min="originalLeaveFrom" />
-                                </div>
+                                </div> -->
                                 <div class="col-6">
+                                    <label class="form-label label-sm">Date of Leave From</label>
+
+                                    <!-- VIEW MODE -->
+                                    <input v-if="!canUpdate" type="text" class="form-control"
+                                        :value="toYMD(leaveRequest.leave_from)" readonly />
+
+                                    <!-- EDIT MODE -->
+                                    <input v-else type="date" class="form-control" v-model="editableLeave.leave_from"
+                                        :min="originalLeaveFrom" />
+                                </div>
+
+                                <!-- <div class="col-6">
                                     <label class="form-label label-sm">Date of Leave To</label>
                                     <input type="date" class="form-control" v-model="editableLeave.leave_to"
                                         :readonly="!canUpdate" />
+                                </div> -->
+                                <div class="col-6">
+                                    <label class="form-label label-sm">Date of Leave To</label>
+
+                                    <!-- VIEW MODE -->
+                                    <input v-if="!canUpdate" type="text" class="form-control"
+                                        :value="toYMD(leaveRequest.leave_to)" readonly />
+
+                                    <!-- EDIT MODE -->
+                                    <input v-else type="date" class="form-control" v-model="editableLeave.leave_to" :min="originalLeaveFrom" />
                                 </div>
+
                             </div>
                             <div class="row">
                                 <div class="col-12">
@@ -101,57 +124,115 @@
                                     <input type="text" id="approver" class="form-control"
                                         v-model="leaveRequest.approved_by" readonly />
                                 </div>
-                               
-                                <div class="col-3">
+
+                                <div class="col-4">
                                     <label for="leave_status" class="form-label label-sm">Date Approved</label>
                                     <input type="text" id="leave_status" class="form-control"
                                         v-model="formatteddate_approved" readonly />
                                 </div>
-                                 <div class="col-5">
+                                <div class="col-4">
                                     <label for="leave_status" class="form-label label-sm">Leave Status</label>
                                     <input type="text" id="leave_status" class="form-control"
                                         v-model="leaveRequest.status" readonly />
                                 </div>
                             </div>
                         </div>
+
+                        <!-- LEAVE BALANCE SUMMARY -->
+                        <div class="section" v-if="leaveRequest.status === 'APPROVED'">
+                            <div class="section-title">LEAVE BALANCE SUMMARY</div>
+                            <hr class="mt-0 mb-2">
+
+                            <div class="row">
+                                <div class="col-4">
+                                    <label class="form-label label-sm">Remaining Before</label>
+                                    <input type="text" class="form-control" :value="leaveBalanceComputed.before"
+                                        readonly />
+
+                                </div>
+
+                                <div class="col-4">
+                                    <label class="form-label label-sm">Leave Applied</label>
+                                    <input type="text" class="form-control leave_days"
+                                        :value="leaveBalanceComputed.applied" readonly />
+                                </div>
+
+                                <div class="col-4">
+                                    <label class="form-label label-sm">Remaining Balance</label>
+
+                                    <input type="text" class="form-control remaining_balance"
+                                        :class="{ 'text-danger border-danger': isExcessLeave }"
+                                        :value="leaveBalanceComputed.after" readonly />
+                                </div>
+                                <div v-if="isExcessLeave" class="mt-2 text-danger"
+                                    style="font-size: 12px; font-weight: 600;">
+                                    ⚠ Excess leave detected. This may be subject to salary deduction.
+                                </div>
+
+                            </div>
+                        </div>
+
                     </div>
 
                     <!-- Modal Footer -->
-                    <div class="modal-footer">
+                    <div class="modal-footer d-flex justify-content-between align-items-center">
 
-                        <button v-if="leaveRequest.status === 'APPROVED'" type="button" class="btn btn-primary"
-                            @click="downloadLeavePdf">
+                        <!-- LEFT SIDE ACTIONS -->
+                        <div class="d-flex align-items-center gap-2">
 
-                            <i class="fas fa-print"></i> Print
-                        </button>
-
-                        <div
-                            v-if="user.job_title == 'Department Head' && leaveRequest.status == 'FOR DEPARTMENT HEAD APPROVAL'">
-
-                            <button type="button" class="btn btn-secondary" @click="approveLeaveRequest"
-                                :disabled="!canApprove">
-                                Approve
+                            <!-- Print -->
+                            <button v-if="leaveRequest.status === 'APPROVED'" type="button" class="btn btn-primary"
+                                @click="downloadLeavePdf">
+                                <i class="fas fa-print"></i>&nbsp;Print
                             </button>
 
-                            <button v-if="canDeny" class="btn btn-danger" @click="denyLeaveRequest">Deny</button>
+                            <!-- Approve  -->
+                            <button v-if="user.job_title === 'Department Head'
+                                && leaveRequest.status === 'FOR DEPARTMENT HEAD APPROVAL'" type="button"
+                                class="btn btn-success" @click="approveLeaveRequest"
+                                :disabled="!canApprove || approving || denying">
+                                <span v-if="approving">
+                                    <i class="fas fa-spinner fa-spin"></i>&nbsp;Approving...
+                                </span>
+                                <span v-else>
+                                    <i class="fas fa-circle-check"></i>&nbsp;Approve
+                                </span>
+                            </button>
+
+                            <!-- Update (DENIED only) -->
+                            <button v-if="canUpdate" type="button" class="btn btn-warning"
+                                :disabled="approving || denying" @click="updateLeave">
+                                <i class="fas fa-pen-to-square"></i>&nbsp;Update
+                            </button>
+
 
                         </div>
 
-                        <div v-if="leaveRequest.status == 'DENIED'">
-                            <button type="button" class="btn btn-warning" @click="updateLeave">Update</button>
-                        </div>
-                        <div v-if="canCancel">
-                            <button type="button" class="btn btn-danger" @click="cancelLeave">
+                        <div class="d-flex align-items-center gap-2">
+
+                            <!-- Deny -->
+                            <button v-if="user.job_title === 'Department Head'
+                                && leaveRequest.status === 'FOR DEPARTMENT HEAD APPROVAL'" class="btn btn-danger"
+                                @click="denyLeaveRequest" :disabled="!canDeny || approving || denying">
+                                <span v-if="denying">
+                                    <i class="fas fa-spinner fa-spin"></i>&nbsp;Denying...
+                                </span>
+                                <span v-else>
+                                    <i class="fas fa-circle-xmark"></i>&nbsp;Deny
+                                </span>
+                            </button>
+
+
+                            <!-- Cancel Leave -->
+                            <button v-if="canCancel" type="button" class="btn btn-danger" @click="cancelLeave">
                                 Cancel Leave
                             </button>
-                        </div>
 
 
-                        <div>
-                            <button type="button" class="btn btn-info" @click="closeModal">Close</button>
                         </div>
 
                     </div>
+
                 </form>
 
                 <leaves_print ref="leavePdf" :request="leaveRequest" v-show="showLeavePdf" />
@@ -189,6 +270,9 @@ export default {
                 leave_number: "",
             },
             showLeavePdf: false,
+
+            approving: false,
+            denying: false,
         }
     },
 
@@ -198,12 +282,10 @@ export default {
             handler(val) {
                 if (!val) return;
 
-                const from = this.toDateInput(val.leave_from);
-                const to = this.toDateInput(val.leave_to);
 
-                this.originalLeaveFrom = from;
-                this.editableLeave.leave_from = from;
-                this.editableLeave.leave_to = to;
+                this.originalLeaveFrom = val.leave_from;
+                this.editableLeave.leave_from = val.leave_from;
+                this.editableLeave.leave_to = val.leave_to;
                 this.editableLeave.leave_reason = val.leave_reason || "";
                 this.editableLeave.leave_number = val.leave_number || "";
             }
@@ -211,11 +293,41 @@ export default {
 
         'editableLeave.leave_from': 'recomputeTotalDays',
         'editableLeave.leave_to': 'recomputeTotalDays',
+
     },
     mounted() {
         this.fetchExistingLeaves();
     },
     methods: {
+        generateLeavePdfBlob() {
+            this.showLeavePdf = true;
+
+            return this.$nextTick().then(() => {
+                const element = this.$refs.leavePdf.$el;
+
+                return html2pdf()
+                    .set({
+                        margin: 10,
+                        image: { type: "jpeg", quality: 0.98 },
+                        html2canvas: {
+                            scale: 2,
+                            useCORS: true
+                        },
+                        jsPDF: {
+                            unit: "mm",
+                            format: "a4",
+                            orientation: "portrait"
+                        }
+                    })
+                    .from(element)
+                    .outputPdf("blob")
+                    .then(blob => {
+                        this.showLeavePdf = false;
+                        return blob;
+                    });
+            });
+        },
+
         downloadLeavePdf() {
 
             this.showLeavePdf = true;
@@ -260,17 +372,20 @@ export default {
             }).then(result => {
                 if (!result.isConfirmed) return;
 
+                const fd = new FormData();
+                fd.append("args", "CANCELLED");
+                fd.append("ref_no", this.leaveRequest.ref_no);
+                fd.append("user", `${this.user.first_name} ${this.user.last_name}`);
+                fd.append("emp_id", this.leaveRequest.emp_id);
+
+
                 fetch(`${API_BASE}/approved_deny_leaves`, {
                     method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        args: "CANCELLED",
-                        ref_no: this.leaveRequest.ref_no,
-                        user: `${this.user.first_name} ${this.user.last_name}`,
-                    }),
+                    body: fd
                 })
                     .then(res => res.json())
                     .then(data => {
+                        console.log(data)
                         if (data.success) {
                             Swal.fire("Cancelled", "Leave request has been cancelled.", "success");
                             this.$emit("updateDataTable");
@@ -293,6 +408,7 @@ export default {
             })
                 .then(res => res.json())
                 .then(data => {
+                    // console.log(data)
                     this.existingLeaves = data.alldates || [];
                 });
         },
@@ -345,45 +461,69 @@ export default {
                 return;
             }
 
-            const result = this.validateLeaveDates({
-                from: this.editableLeave.leave_from,
-                to: this.editableLeave.leave_to,
-                type: "VL",
-                halfDay: false,
-                isUpdate: true
-            });
-
-            if (!result.valid) {
-                Swal.fire("Invalid", result.msg || "Invalid leave dates.", "warning");
+            const days = this.calculateDays(this.editableLeave.leave_from, this.editableLeave.leave_to);
+            if (days <= 0) {
+                Swal.fire("Invalid", "Invalid leave date range.", "warning");
                 return;
             }
 
-            const payload = {
-                ref_number: this.leaveRequest.ref_no,
-                date_from: this.editableLeave.leave_from,
-                date_to: this.editableLeave.leave_to,
-                leave_number: result.days,
-                leave_reason: this.editableLeave.leave_reason,
-                fullName: `${this.user.first_name} ${this.user.last_name}`,
-            };
+            // CONFIRMATION FIRST
+            Swal.fire({
+                title: "Update this leave request?",
+                html: `
+      Are you sure you want to update this denied leave request?<br><br>
+      <div style="text-align:left; font-size:13px;">
+        <b>Reference:</b> ${this.leaveRequest.ref_no}<br>
+        <b>Date From:</b> ${this.toYMD(this.editableLeave.leave_from)}<br>
+        <b>Date To:</b> ${this.toYMD(this.editableLeave.leave_to)}<br>
+        <b>Total Days:</b> ${days}<br>
+      </div>
+      <br>
+      This will be re-submitted for approval.
+    `,
+                icon: "question",
+                showCancelButton: true,
+                confirmButtonText: "Yes, update",
+                cancelButtonText: "No, cancel",
+                confirmButtonColor: "#f0ad4e",
+            }).then(result => {
+                if (!result.isConfirmed) return;
 
-            fetch(`${API_BASE}/update_denied_leaves`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload),
-            })
-                .then(r => r.json())
-                .then(data => {
-                    if (data.success) {
-                        Swal.fire("Success", "Leave has been updated successfully", "success");
-                        this.$emit("updateDataTable");
-                        this.closeModal();
-                    } else {
-                        Swal.fire("Error", data.error || "Update failed", "error");
-                    }
+                const payload = {
+                    ref_number: this.leaveRequest.ref_no,
+                    date_from: this.editableLeave.leave_from,
+                    date_to: this.editableLeave.leave_to,
+                    leave_number: days,
+                    leave_reason: this.editableLeave.leave_reason,
+                    fullName: `${this.user.first_name} ${this.user.last_name}`,
+                };
+
+                fetch(`${API_BASE}/update_denied_leaves`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload),
                 })
-                .catch(() => Swal.fire("Error", "Something went wrong", "error"));
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data.success) {
+                            Swal.fire({
+                                icon: "success",
+                                title: "Updated",
+                                html: `The denied leave request has been updated and re-submitted for department head approval.`,
+                                confirmButtonColor: "#28a745"
+                            });
+
+                            this.$emit("updateDataTable");
+                            this.closeModal();
+                        } else {
+                            Swal.fire("Error", data.error || "Update failed", "error");
+                        }
+                    })
+                    .catch(() => Swal.fire("Error", "Something went wrong", "error"));
+            });
         },
+
+
 
 
         closeModal() {
@@ -391,80 +531,125 @@ export default {
         },
 
         approveLeaveRequest() {
-            if (!this.canApprove) {
-                Swal.fire(
-                    "Cannot Approve",
-                    "This leave can no longer be approved because the Date From has already passed.",
-                    "warning"
-                );
-                return;
-            }
+            if (!this.canApprove) return;
+
+            this.approving = true;
+
+            const fd = new FormData();
+            fd.append("args", "APPROVED");
+            fd.append("ref_no", this.leaveRequest.ref_no);
+            fd.append("user", `${this.user.first_name} ${this.user.last_name}`);
+            fd.append("emp_id", this.leaveRequest.emp_id);
 
             fetch(`${API_BASE}/approved_deny_leaves`, {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    args: "APPROVED",
-                    ref_no: this.leaveRequest.ref_no,
-                    user: `${this.user.first_name} ${this.user.last_name}`,
-                }),
+                body: fd
             })
-                .then(response => response.json())
+                .then(res => res.json())
                 .then(data => {
+                    if (!data.success) throw new Error("Approval failed");
+
+                    // UPDATE UI STATE
+                    this.leaveRequest.status = "APPROVED";
+
+                    // STEP 2: NOW GENERATE PDF (APPROVED NA)
+                    return this.generateLeavePdfBlob();
+                })
+                .then(pdfBlob => {
+                    const fd2 = new FormData();
+                    fd2.append("args", "APPROVED");
+                    fd2.append("ref_no", this.leaveRequest.ref_no);
+                    fd2.append("user", `${this.user.first_name} ${this.user.last_name}`);
+                    fd2.append("emp_id", this.leaveRequest.emp_id);
+                    fd2.append("pdf", pdfBlob, `${this.leaveRequest.ref_no}.pdf`);
+
+                    // STEP 3: SEND PDF FOR EMAIL
+                    return fetch(`${API_BASE}/approved_deny_leaves`, {
+                        method: "POST",
+                        body: fd2
+                    });
+                })
+                .then(() => {
+                    Swal.fire({
+                        icon: "success",
+                        title: "Leave approved successfully.",
+                        html: `
+                            <b>Email sent to HR.</b>
+            `,
+                        confirmButtonColor: "#28a745"
+                    });
+                    this.$emit("updateDataTable");
+                    this.closeModal();
+                })
+                .catch(() => {
+                    Swal.fire("Error", "Something went wrong", "error");
+                })
+                .finally(() => {
+                    this.approving = false;
+                });
+        },
+
+
+
+        denyLeaveRequest() {
+            this.denying = true;
+
+            const fd = new FormData();
+            fd.append("args", "DENIED");
+            fd.append("ref_no", this.leaveRequest.ref_no);
+            fd.append("user", `${this.user.first_name} ${this.user.last_name}`);
+            fd.append("emp_id", this.leaveRequest.emp_id);
+
+            fetch(`${API_BASE}/approved_deny_leaves`, {
+                method: "POST",
+                body: fd
+            })
+                .then(res => res.json())
+                .then(data => {
+                    // console.log(data)
                     if (data.success) {
-                        Swal.fire("Success", "Leave request approved", "success");
+                        Swal.fire("Success", "Leave request denied", "success");
                         this.$emit("updateDataTable");
                         this.closeModal();
                     } else {
-                        Swal.fire("Error", data.error || "Failed to approve leave", "error");
+                        Swal.fire("Error", data.error || "Failed to deny leave", "error");
                     }
                 })
                 .catch(() => {
                     Swal.fire("Error", "Something went wrong", "error");
-                });
-        },
-
-        denyLeaveRequest() {
-            fetch(`${API_BASE}/approved_deny_leaves`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    args: "DENIED",
-                    ref_no: this.leaveRequest.ref_no,
-                    user: `${this.user.first_name} ${this.user.last_name}`,
-                }
-                ),
-            })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        Swal.fire("Success", "Leave request DENIED", "success");
-                        this.$emit('updateDataTable'); // Emit the event
-                        this.closeModal(); // Close the modal
-                    } else {
-                        Swal.fire("Error", data.error || "Failed to submit leave", "error");
-                    }
                 })
-                .catch(error => {
-                    console.error("Error submitting form:", error);
-                    Swal.fire("Error", "Something went wrong", "error");
+                .finally(() => {
+                    this.denying = false;
                 });
         },
 
-        toDateInput(date) {
-            if (!date) return "";
 
-            const d = new Date(date);
-            const y = d.getFullYear();
-            const m = String(d.getMonth() + 1).padStart(2, "0");
-            const day = String(d.getDate()).padStart(2, "0");
+        // toDateInput(date) {
+        //     if (!date) return "";
 
-            return `${y}-${m}-${day}`;
-        },
+        //     const d = new Date(date);
+        //     const y = d.getFullYear();
+        //     const m = String(d.getMonth() + 1).padStart(2, "0");
+        //     const day = String(d.getDate()).padStart(2, "0");
+
+        //     return `${y}-${m}-${day}`;
+        // },
+
+
+
+
+        // toDateInput(date) {
+        //     if (!date) return '';
+
+        //     const d = new Date(date);
+
+        //     const year = d.getFullYear();
+        //     const month = String(d.getMonth() + 1).padStart(2, '0');
+        //     const day = String(d.getDate()).padStart(2, '0');
+
+        //     return `${year}-${month}-${day}`;
+        // },
+
 
 
         formatDate(date) {
@@ -473,23 +658,69 @@ export default {
                 return formattedDate.toISOString().split('T')[0]; // returns yyyy-mm-dd
             }
             return '';
+            // return this.toYMD(date);
         },
+
+        formatDateTime(date) {
+            if (!date) return '';
+
+            const parts = date.split(' ');
+            const day = parts[1];
+            const month = parts[2];
+            const year = parts[3];
+            const time = parts[4]; // 13:51:52
+
+            return `${year}-${this.monthToNumber(month)}-${day} ${time}`;
+        },
+
+        monthToNumber(month) {
+            const map = {
+                Jan: '01', Feb: '02', Mar: '03', Apr: '04',
+                May: '05', Jun: '06', Jul: '07', Aug: '08',
+                Sep: '09', Oct: '10', Nov: '11', Dec: '12'
+            };
+            return map[month];
+        },
+
+        toYMD(dateStr) {
+            if (!dateStr) return '';
+
+            const d = new Date(dateStr);
+
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+
+            return `${year}-${month}-${day}`;
+        },
+
+
 
         recomputeTotalDays() {
             if (!this.canUpdate) return;
 
-            const result = this.validateLeaveDates({
-                from: this.editableLeave.leave_from,
-                to: this.editableLeave.leave_to,
-                type: "VL",
-                halfDay: false,
-                isUpdate: true
-            });
+            const days = this.calculateDays(
+                this.editableLeave.leave_from,
+                this.editableLeave.leave_to
+            );
 
-            this.editableLeave.leave_number = result.valid ? result.days : "";
+            this.editableLeave.leave_number = days > 0 ? days : "";
         },
 
 
+        calculateDays(from, to) {
+            if (!from || !to) return 0;
+
+            const start = new Date(from);
+            const end = new Date(to);
+
+            if (end < start) return 0;
+
+            const diffTime = end - start;
+            const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
+
+            return diffDays;
+        },
 
 
     },
@@ -503,18 +734,38 @@ export default {
             };
             return leaveTypes[this.leaveRequest.leave_type]
         },
-        formattedLeaveTo() {
-            return this.formatDate(this.leaveRequest.leave_to);
-        },
-        formattedLeaveFrom() {
-            return this.formatDate(this.leaveRequest.leave_from);
-        },
+        // formattedLeaveTo() {
+        //     return this.leaveRequest.leave_to;
+        // },
+        // formattedLeaveFrom() {
+        //     return this.leaveRequest.leave_from;
+        // },
         formatteddate_approved() {
-            return this.formatDate(this.leaveRequest.date_approved);
+
+            return this.formatDateTime(this.leaveRequest.date_approved);
         },
         canDeny() {
-            return !['Sick Leave', 'Emergency Leave', 'SL', 'EL'].includes(this.leaveRequest.leave_type);
+            if (!this.leaveRequest) return false;
+
+            // only Department Head
+            if (this.user.job_title !== "Department Head") return false;
+
+            // only pending
+            if (this.leaveRequest.status !== "FOR DEPARTMENT HEAD APPROVAL") return false;
+
+            // SL & EL cannot be denied
+            if (["SL", "EL"].includes(this.leaveRequest.leave_type)) return false;
+
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            const from = new Date(this.leaveRequest.leave_from);
+            from.setHours(0, 0, 0, 0);
+
+            // deny disabled if date_from already passed
+            return from.getTime() >= today.getTime();
         },
+
 
         todayIsNotDateFrom() {
             if (!this.leaveRequest.leave_from) return false;
@@ -539,7 +790,6 @@ export default {
             const from = new Date(this.leaveRequest.leave_from);
             from.setHours(0, 0, 0, 0);
 
-            //  edit allowed only if date_from still in future
             return from.getTime() > today.getTime();
         },
 
@@ -550,6 +800,8 @@ export default {
             const status = this.leaveRequest.status;
 
             if (this.leaveRequest.emp_id !== this.user.emp_id) return false;
+
+            if (this.leaveRequest.leave_type !== 'VL') return false;
 
             // already cancelled
             if (status === "CANCELLED") return false;
@@ -574,6 +826,8 @@ export default {
         canApprove() {
             if (!this.leaveRequest) return false;
 
+            if (this.leaveRequest.leave_type == 'SL') return true;
+
             if (this.leaveRequest.status !== "FOR DEPARTMENT HEAD APPROVAL") {
                 return false;
             }
@@ -587,6 +841,31 @@ export default {
             // cannot approve if Date From already passed
             return from.getTime() >= today.getTime();
         },
+
+        leaveBalanceComputed() {
+            const applied = Number(this.leaveRequest.leave_number || 0);
+
+            let remainingAfter = 0;
+
+            if (this.leaveRequest.leave_type === 'SL') {
+                remainingAfter = Number(this.leaveRequest.sl_remaining || 0);
+            } else {
+                // VL & EL
+                remainingAfter = Number(this.leaveRequest.vl_remaining || 0);
+            }
+
+            return {
+                before: remainingAfter + applied,
+                applied,
+                after: remainingAfter
+            };
+        },
+
+        isExcessLeave() {
+            return this.leaveBalanceComputed.after < 0;
+        }
+
+
 
 
 
@@ -647,5 +926,13 @@ input:focus {
     left: -9999px;
     width: 800px;
     background: white;
+}
+
+.leave_days {
+    background-color: #b3cadc !important;
+}
+
+.remaining_balance {
+    background-color: #80e183dc !important;
 }
 </style>
