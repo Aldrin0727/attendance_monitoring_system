@@ -38,3 +38,8 @@ export const attendance_Colors = {
   "HALFDAY": "badge custom-green-2 text-white custom-badge fw-normal",
   "OVERTIME": "badge custom-blue text-white custom-badge fw-normal",
 };
+
+export const holiday_status_colors = {
+  "ACTIVE": "badge custom-green-2 text-white custom-badge fw-normal",
+  "INACTIVE": "badge custom-red-2 text-black custom-badge fw-normal",
+};

@@ -99,15 +99,19 @@
                                             Date of Leave From <strong style="color: red">*</strong>
                                         </label>
                                         <input type="date" id="date_from" class="form-control"
-                                            v-model="leaveForm.date_from" required :max="maxDateForLeave" />
+                                            v-model="leaveForm.date_from" required  :min="minDateFrom" :max="maxDateFrom" />
                                     </div>
                                     <div class="col-6">
                                         <label for="date_to" class="form-label label-sm">
                                             Date of Leave To <strong style="color: red">*</strong>
                                         </label>
                                         <input type="date" id="date_to" class="form-control" v-model="leaveForm.date_to"
-                                            :max="maxDateForLeave" required />
+                                            :min="minDateTo"
+  :max="maxDateTo" :disabled="isHalfDay" required />
                                     </div>
+                                  <!-- <center> <small v-if="isHalfDay" class="text-muted mt-2" style="font-size:12px;">
+                                        Half-day selected — Date To is locked to Date From.
+                                    </small></center> -->
                                 </div>
 
                                 <div class="row mb-2" v-if="showLeaveDetails">
@@ -172,28 +176,91 @@ export default {
         fullName() {
             return `${this.user.first_name} ${this.user.last_name}`.trim();
         },
-        maxDateForLeave() {
-            if (this.selectedTypeofLeave === 'SL') {
-                const today = new Date();
-                const y = today.getFullYear();
-                const m = String(today.getMonth() + 1).padStart(2, '0');
-                const d = String(today.getDate()).padStart(2, '0');
-                return `${y}-${m}-${d}`;
-            }
-            return null;
+        // maxDateForLeave() {
+        //     // if (this.selectedTypeofLeave === 'SL') {
+        //     if (["SL", "EL"].includes(this.selectedTypeofLeave)) {
+        //         const today = new Date();
+        //         const y = today.getFullYear();
+        //         const m = String(today.getMonth() + 1).padStart(2, '0');
+        //         const d = String(today.getDate()).padStart(2, '0');
+        //         return `${y}-${m}-${d}`;
+        //     }
+        //     return null;
+        // },
+
+        todayYMD() {
+            const d = new Date();
+            const y = d.getFullYear();
+            const m = String(d.getMonth() + 1).padStart(2, "0");
+            const day = String(d.getDate()).padStart(2, "0");
+            return `${y}-${m}-${day}`;
         },
-         showLeaveDetails() {
-            return !!this.selectedTypeofLeave;
+        tomorrowYMD() {
+            const d = new Date();
+            d.setDate(d.getDate() + 1);
+            const y = d.getFullYear();
+            const m = String(d.getMonth() + 1).padStart(2, "0");
+            const day = String(d.getDate()).padStart(2, "0");
+            return `${y}-${m}-${day}`;
         },
 
+        // ✅ min date for Date From
+        minDateFrom() {
+            if (this.selectedTypeofLeave === "VL") return this.tomorrowYMD; // tomorrow start
+            return null; // no min for SL/EL
+        },
+
+        // ✅ max date for Date From
+        maxDateFrom() {
+            if (this.selectedTypeofLeave === "SL") return this.todayYMD;
+            if (this.selectedTypeofLeave === "EL") return this.todayYMD; // same as SL per your rule
+            return null; // no max for VL
+        },
+
+        // ✅ Date To follows same rule
+        minDateTo() {
+            // if halfday, date_to locked anyway, but still safe:
+            if (this.leaveForm.half_day) return this.leaveForm.date_from || this.minDateFrom;
+            // normally date_to can't be earlier than date_from
+            return this.leaveForm.date_from || this.minDateFrom;
+        },
+        maxDateTo() {
+            if (this.selectedTypeofLeave === "SL") return this.todayYMD;
+            if (this.selectedTypeofLeave === "EL") return this.todayYMD;
+            return null;
+        },
+
+        showLeaveDetails() {
+            return !!this.selectedTypeofLeave;
+        },
+        isHalfDay() {
+            return !!this.leaveForm.half_day; 
+        },
 
 
     },
     watch: {
-        'leaveForm.date_from': 'calculateTotalLeaveDays',
-        'leaveForm.date_to': 'calculateTotalLeaveDays',
-        'leaveForm.half_day': 'calculateTotalLeaveDays',
+        'leaveForm.date_from'(val) {
+            // kapag half-day, auto-sync date_to
+            if (this.leaveForm.half_day && val) {
+                this.leaveForm.date_to = val;
+            }
+            this.calculateTotalLeaveDays();
+        },
+
+        'leaveForm.date_to'() {
+            this.calculateTotalLeaveDays();
+        },
+
+        'leaveForm.half_day'(val) {
+            // kapag nag-halfday, lock date_to = date_from
+            if (val && this.leaveForm.date_from) {
+                this.leaveForm.date_to = this.leaveForm.date_from;
+            }
+            this.calculateTotalLeaveDays();
+        },
     },
+
     methods: {
         getBalanceType(type) {
 
@@ -294,12 +361,12 @@ export default {
                 return;
             }
 
-            //  SL cannot be future date AND cannot be today
-            if (this.selectedTypeofLeave === "SL") {
+            // SL & EL cannot be future date
+            if (["SL", "EL"].includes(this.selectedTypeofLeave)) {
                 if (startOnly.getTime() > todayOnly.getTime()) {
                     Swal.fire(
                         "Not Allowed",
-                        "Sick Leave (SL) cannot be filed for future dates.",
+                        `${this.selectedTypeofLeave} cannot be filed for future dates.`,
                         "warning"
                     );
                     this.leaveForm.date_from = "";
@@ -308,7 +375,8 @@ export default {
                     return;
                 }
 
-                if (startOnly.getTime() === todayOnly.getTime()) {
+                // OPTIONAL: kung gusto mo rin bawal today for SL only
+                if (this.selectedTypeofLeave === "SL" && startOnly.getTime() === todayOnly.getTime()) {
                     Swal.fire(
                         "Warning",
                         "You cannot schedule Sick Leave (SL) dated today. SL is only for absences already incurred.",
@@ -320,6 +388,7 @@ export default {
                     return;
                 }
             }
+
 
             // Enforce half-day rule
             if (halfDay && from !== to) {
@@ -390,7 +459,7 @@ export default {
                 }
             }
 
-            if (this.selectedTypeofLeave === 'SL') {
+            if (["SL", "EL"].includes(this.selectedTypeofLeave)) {
                 const start = new Date(this.leaveForm.date_from);
                 const now = new Date();
 
@@ -533,7 +602,7 @@ export default {
 }
 
 input:focus {
-    background-color: #e9ecef;
+    background-color: #d0f4de;
 }
 
 .modal-title {
@@ -554,5 +623,9 @@ input:focus {
 #leave_reason:focus {
     background-color: #fff !important;
     font-size: 12px !important;
+}
+
+#date_to:disabled{
+  background-color: #a4d0ed !important;
 }
 </style>

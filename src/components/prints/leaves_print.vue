@@ -67,11 +67,11 @@
                 </div>
                 <div class="field">
                     <label>Date From</label>
-                    <div class="value">{{ formatDate(request.leave_from) }}</div>
+                    <div class="value">{{ formatDate2(request.leave_from) }}</div>
                 </div>
                 <div class="field">
                     <label>Date To</label>
-                    <div class="value">{{ formatDate(request.leave_to) }}</div>
+                    <div class="value">{{ formatDate2(request.leave_to) }}</div>
                 </div>
             </div>
 
@@ -126,7 +126,7 @@
                 </div>
 
                 <div class="field">
-                    <label>Balance After</label>
+                    <label>Remaining Balance</label>
                     <div class="value" :class="{ 'text-danger': Number(balanceAfter) < 0 }">
                         {{ balanceAfter }}
                     </div>
@@ -139,13 +139,30 @@
             </small>
         </div>
 
+        <!-- LAST APPROVED LEAVE TAKEN -->
+        <div class="card">
+            <div class="card-title mb-0">LEAVE HISTORY</div>
+
+            <div class="grid-2">
+                <div class="field MT-3">
+                    <label>Last Approved Leave Taken</label>
+                    <div class="value">{{ formatDate2(lastApprovedLeaveTaken)  }}</div>
+                    <!-- <small style="display:block;margin-top:6px;color:#6b7280;">
+                        Based on the most recent approved leave (same leave type) that already ended.
+                    </small> -->
+                </div>
+            </div>
+        </div>
 
     </div>
 </template>
 
 <script>
 export default {
-    props: { request: Object },
+    props: { 
+        request: Object,
+          lastApprovedLeaveTaken: [String, Date, null]
+    },
     computed: {
         leaveType() {
             const map = { VL: "Vacation Leave", SL: "Sick Leave", EL: "Emergency Leave" };
@@ -175,6 +192,10 @@ export default {
         balanceBefore() {
             return this.remainingAfter + this.leaveApplied;
         },
+
+      
+
+ 
     },
 
     methods: {
@@ -183,6 +204,20 @@ export default {
             const date = new Date(d)
             return date.toLocaleDateString('en-PH') // dd/mm/yyyy
         },
+
+        formatDate2(d) {
+            if (!d) return "-";
+
+            const date = new Date(String(d).trim());
+            if (isNaN(date.getTime())) return "-";
+
+            const y = date.getUTCFullYear();
+            const m = String(date.getUTCMonth() + 1).padStart(2, "0");
+            const day = String(date.getUTCDate()).padStart(2, "0");
+
+            return `${y}-${m}-${day}`;
+        },
+
 
         formatDateTime(date) {
             if (!date) return '';
