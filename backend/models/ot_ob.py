@@ -5,6 +5,9 @@ from datetime import datetime
 from config import Config
 ot_ob_bp = Blueprint('ot_ob_bp', __name__)
 
+from plugins import mail
+from emails import send_otob_request_email
+
 @ot_ob_bp.route('/create_ob_ot_request', methods=['POST'])
 def create_request():
     try: 
@@ -47,7 +50,7 @@ def create_request():
         cursor.execute(
             "INSERT INTO ot_ob (emp_id,fullName,type,category,destination,req_from,req_to,request_reason,project,date_created,status,ref_number,department) "
             "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, NOW(), %s, %s, %s)",
-            (emp_id, fullName, type, category, destination, req_from, req_to,reason,project, 'FOR DEPARTMENT HEAD APPROVAL', newref_No,department)
+            (emp_id, fullName, type, category, destination, req_from, req_to,reason,project, 'FOR PRE-APPROVAL', newref_No,department)
         )
 
         cursor.execute(
@@ -88,20 +91,14 @@ def get_otob_approval_list():
         #     base_query += " AND emp_id = %s"
         #     values.append(emp_id)
 
-        if job_title == 'Department Head' and status == 'FOR DEPARTMENT HEAD APPROVAL':
+        if job_title == 'Department Head' and status == 'FOR PRE-APPROVAL':
             base_query = f"""
                 SELECT * from ot_ob LEFT JOIN `{Config.MYSQL_DB2}`.users ON ot_ob.emp_id = `{Config.MYSQL_DB2}`.users.emp_id  WHERE status = %s and ot_ob.department = %s"""
             values = [status, department]
         else:
-            if status == "FOR DEPARTMENT HEAD APPROVAL":
-                base_query = f"""
-                    SELECT * from ot_ob LEFT JOIN `{Config.MYSQL_DB2}`.users ON ot_ob.emp_id = `{Config.MYSQL_DB2}`.users.emp_id WHERE ot_ob.emp_id = %s and status ='FOR DEPARTMENT HEAD APPROVAL'"""
-                values = [emp_id]
-            else:
-                base_query = f"""
-                    SELECT * from ot_ob LEFT JOIN `{Config.MYSQL_DB2}`.users ON ot_ob.emp_id = `{Config.MYSQL_DB2}`.users.emp_id WHERE ot_ob.emp_id = %s """
-                values = [emp_id]
-            
+            base_query = f"""
+                SELECT * from ot_ob LEFT JOIN `{Config.MYSQL_DB2}`.users ON ot_ob.emp_id = `{Config.MYSQL_DB2}`.users.emp_id WHERE ot_ob.emp_id = %s"""
+            values = [emp_id]
         
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
         cursor.execute(base_query, tuple(values))
@@ -116,7 +113,7 @@ def get_otob_approval_list():
 def get_otob_count_approval():
     try:
         data = request.get_json()
-        # username = data.get("fullName")
+        username = data.get("fullName")
         position = data.get("job_title")
         department = data.get("department")
         emp_id = data.get("emp_id")
@@ -127,7 +124,7 @@ def get_otob_count_approval():
             SELECT count(*) as app_count 
             from ot_ob 
             where department = %s 
-            and status = 'FOR DEPARTMENT HEAD APPROVAL'
+            and status = 'FOR PRE-APPROVAL'
             """
             params = (department,)
 
@@ -136,7 +133,7 @@ def get_otob_count_approval():
         app_count = cursor.fetchone()["app_count"]
 
         cursor.execute("""
-            SELECT count(*) as otob_user_count from ot_ob where emp_id = %s and status = 'FOR DEPARTMENT HEAD APPROVAL'
+            SELECT count(*) as otob_user_count from ot_ob where emp_id = %s and status = 'FOR PRE-APPROVAL'
         """, (emp_id,))  
         user_count = cursor.fetchone()["otob_user_count"]
 
@@ -171,15 +168,60 @@ def get_otob_calendar_date():
 @ot_ob_bp.route('/update_approved_deny_otob', methods=['POST'])
 def update_approved_deny_otob():
     try:  
-        data = request.get_json()
-        args = data.get("args")
-        ref_number = data.get("ref_number")
-        username = data.get("user")
+
+        args = request.form.get("args")
+        ref_number = request.form.get("ref_number")
+        username = request.form.get("user")
+        pdf_file = request.files.get("pdf")
 
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
         if args == "APPROVED" :
             cursor.execute(
                 "UPDATE  ot_ob set status = %s,approved_by = %s, date_approved = NOW() WHERE ref_number = %s",(args, username, ref_number))
+            
+            cursor.execute(
+                """INSERT INTO otob_history (module, ref_number, action, `user`, date) 
+                VALUES (%s, %s, %s, %s, NOW())""",
+                ('REQUEST APPROVAL', ref_number, 'Approved Request', username)
+            )
+
+            mysql.connection.commit() 
+
+            otob_qry = f"""
+                SELECT 
+                ot_ob.*,
+                `{Config.MYSQL_DB2}`.users.email,
+                (SELECT d.department
+                    FROM `{Config.MYSQL_DB2}`.departments d
+                    WHERE d.dept_code = ot_ob.department
+                    LIMIT 1
+                ) AS dept_code
+                FROM ot_ob
+                LEFT JOIN `{Config.MYSQL_DB2}`.users 
+                ON ot_ob.emp_id = `{Config.MYSQL_DB2}`.users.emp_id
+                WHERE ot_ob.ref_number = %s
+            """
+
+            cursor.execute(otob_qry, (ref_number,))
+            otob_details = cursor.fetchone()
+
+            if pdf_file and otob_details:
+                send_otob_request_email(
+                    mail,
+                    otob_details['fullName'],
+                    otob_details['ref_number'],
+                    otob_details['dept_code'],
+                    otob_details.get('actual_hours'),
+                    otob_details.get('actual_from'),
+                    otob_details.get('actual_to'),
+                    otob_details['email'],
+                    otob_details['type'],
+                    pdf_file=pdf_file
+                )
+
+        elif args == 'PRE-APPROVED':
+            cursor.execute(
+                "UPDATE  ot_ob set status = %s,preapproved_by = %s, date_preapproved = NOW() WHERE ref_number = %s",(args, username, ref_number))
             
             cursor.execute(
                 """INSERT INTO otob_history (module, ref_number, action, `user`, date) 
@@ -215,7 +257,7 @@ def update_actual_date():
 
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
         cursor.execute(
-                "UPDATE ot_ob set actual_from = %s, actual_to = %s, actual_hours = %s, status = %s WHERE ref_number = %s",(actual_from, actual_to, actual_hours, "FOR HR RECORD", ref_number))
+                "UPDATE ot_ob set actual_from = %s, actual_to = %s, actual_hours = %s, status = %s WHERE ref_number = %s",(actual_from, actual_to, actual_hours, "FOR FINAL APPROVAL", ref_number))
             
         cursor.execute(
                 """INSERT INTO otob_history (module, ref_number, action, `user`, date) 
@@ -230,20 +272,20 @@ def update_actual_date():
     except Exception as e:
         return jsonify({"error": str(e)}),500
     
-# @ot_ob_bp.route('/get_otob_for_approval_request_date', methods=['POST'])
-# def get_otob_for_approval_request_date():
-#     try:
-#         data = request.get_json()
-#         emp_id = data.get("emp_id")
+@ot_ob_bp.route('/get_otob_for_approval_request_date', methods=['POST'])
+def get_otob_for_approval_request_date():
+    try:
+        data = request.get_json()
+        emp_id = data.get("emp_id")
 
-#         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
-#         cursor.execute("""
-#             SELECT  * from ot_ob where emp_id = %s and (status = 'FOR DEPARTMENT HEAD APPROVAL' || status = 'APPROVED' || status = 'FOR HR RECORD')
-#         """, (emp_id,))  
-#         alldates = cursor.fetchall()
+        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor.execute("""
+            SELECT  * from ot_ob where emp_id = %s and (status = 'FOR PRE-APPROVAL' || status = 'APPROVED' || status = 'FOR HR RECORD')
+        """, (emp_id,))  
+        alldates = cursor.fetchall()
 
-#         cursor.close()
+        cursor.close()
 
-#         return jsonify({"success": True,"alldates":alldates}), 201
-#     except Exception as e:
-#         return jsonify({"error": str(e)}),500
+        return jsonify({"success": True,"alldates":alldates}), 201
+    except Exception as e:
+        return jsonify({"error": str(e)}),500

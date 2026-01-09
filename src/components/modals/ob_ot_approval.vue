@@ -1,7 +1,16 @@
 <template>
     <div class="modal" v-if="isVisible">
+
         <div class="modal-dialog">
             <div class="modal-content">
+                         <div v-if="approving" class="screen-loader" role="dialog" aria-modal="true">
+                    <div class="loader-card">
+                        <div class="spinner-border" aria-hidden="true"></div>
+                        <div class="loader-title">Processing approval</div>
+                        <div class="loader-subtitle">Please wait while we generate PDF & send the email.</div>
+                    </div>
+
+                </div>
 
                 <!-- HEADER -->
                 <div class="modal-header py-1">
@@ -109,7 +118,7 @@
                     </div>
 
                     <!-- ACTUAL OB/OT DATE INPUTS (Visible Only When Approved) -->
-                    <div class="section mt-3" v-if="['APPROVED', 'FOR HR RECORD'].includes(ob_ot_Request.status)">
+                    <div class="section mt-3" v-if="['APPROVED', 'PRE-APPROVED'].includes(ob_ot_Request.status)">
                         <div class="section-title">
                             Actual {{ ob_ot_Request.type }} Execution
                         </div>
@@ -176,23 +185,26 @@
                         <button class="btn btn-danger" @click="denyRequest">Deny</button>
                     </div>
 
-                    <div v-if="ob_ot_Request.status === 'APPROVED'">
+
+                    <button class="btn btn-secondary me-2" @click="finalApproval"
+                        v-if="canFinalApprove">Approve</button>
+                    <button class="btn btn-danger" @click="denyRequest" v-if="canFinalApprove">Deny</button>
+
+                    <div v-if="ob_ot_Request.status === 'PRE-APPROVED'">
                         <button class="btn btn-success me-2" @click="saveActualDates">
                             Save Actual {{ ob_ot_Request.type }} Dates
                         </button>
-                        <!-- <button class="btn btn-info" @click="closeModal">Close</button> -->
                     </div>
 
-                    <div v-else>
-                        <button class="btn btn-info" @click="closeModal">Close</button>
-                    </div>
                 </div>
 
+               
 
                 <ot_ob_print ref="pdfTemplate" :request="ob_ot_Request" v-show="showPdf" />
 
 
             </div>
+
 
         </div>
     </div>
@@ -223,23 +235,30 @@ export default {
                 actual_to: ""
             },
             showPdf: false,
-            total_time: ""
+            total_time: "",
 
+            approving: false,
         };
     },
 
     computed: {
         isHrRecord() {
-            return this.ob_ot_Request.status === 'FOR HR RECORD';
+            return this.ob_ot_Request.status === 'APPROVED';
         },
         canApprove() {
             return (
                 this.user.job_title === "Department Head" &&
-                this.ob_ot_Request.status === "FOR DEPARTMENT HEAD APPROVAL"
+                this.ob_ot_Request.status === "FOR PRE-APPROVAL"
+            );
+        },
+        canFinalApprove() {
+            return (
+                this.user.job_title === "Department Head" &&
+                this.ob_ot_Request.status === "FOR FINAL APPROVAL"
             );
         },
         canDownloadPdf() {
-            return ["APPROVED", "FOR HR RECORD"].includes(this.ob_ot_Request.status);
+            return ["APPROVED"].includes(this.ob_ot_Request.status);
         }
     },
 
@@ -272,7 +291,7 @@ export default {
 
 
     methods: {
-         formatDateTime(date) {
+        formatDateTime(date) {
             if (!date) return '';
 
             const parts = date.split(' ');
@@ -283,7 +302,7 @@ export default {
 
             return `${year}-${this.monthToNumber(month)}-${day} ${time}`;
         },
-        
+
         downloadPdf() {
             this.showPdf = true;
 
@@ -306,6 +325,29 @@ export default {
             });
         },
 
+        generateOBOTPdfBlob() {
+            this.showPdf = true;
+
+            return this.$nextTick().then(() => {
+                const element = this.$refs.pdfTemplate.$el;
+
+                return html2pdf()
+                    .set({
+                        margin: 10,
+                        image: { type: "jpeg", quality: 0.98 },
+                        html2canvas: { scale: 2, useCORS: true },
+                        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" }
+                    })
+                    .from(element)
+                    .outputPdf("blob")
+                    .then((blob) => {
+                        this.showPdf = false;
+                        return blob;
+                    });
+            });
+        },
+
+
 
         closeModal() {
             this.$emit("close");
@@ -317,13 +359,18 @@ export default {
             return d.toISOString().slice(0, 16); // yyyy-mm-ddTHH:mm
         },
 
-   formatDisplayDate(dt) {
-  if (!dt) return "";
-  return new Date(dt).toISOString().slice(0, 19).replace("T", " ");
-},
+        formatDisplayDate(dt) {
+            if (!dt) return "";
+            return new Date(dt).toISOString().slice(0, 19).replace("T", " ");
+        },
 
 
         approveRequest() {
+            // this.submitDecision("APPROVED");
+            this.submitDecision("PRE-APPROVED");
+        },
+        finalApproval() {
+            // this.submitDecision("APPROVED");
             this.submitDecision("APPROVED");
         },
 
@@ -367,31 +414,83 @@ export default {
             this.total_time = `${hours}h ${minutes}m`;
         },
 
-        submitDecision(decision) {
-            fetch(`${API_BASE}/update_approved_deny_otob`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    args: decision,
-                    ref_number: this.ob_ot_Request.ref_number,
-                    user: `${this.user.first_name} ${this.user.last_name}`
-                })
-            })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.success) {
-                        Swal.fire("Success", `Request ${decision}`, "success");
-                        this.$emit("updateDataTable");
-                        this.closeModal();
-                    } else {
-                        Swal.fire("Error", data.error || "Request failed", "error");
-                    }
-                })
-                .catch(err => {
-                    console.error(err);
-                    Swal.fire("Error", "Something went wrong", "error");
+        // submitDecision(decision) {
+        //     fetch(`${API_BASE}/update_approved_deny_otob`, {
+        //         method: "POST",
+        //         headers: { "Content-Type": "application/json" },
+        //         body: JSON.stringify({
+        //             args: decision,
+        //             ref_number: this.ob_ot_Request.ref_number,
+        //             user: `${this.user.first_name} ${this.user.last_name}`
+        //         })
+        //     })
+        //         .then(res => res.json())
+        //         .then(data => {
+        //             if (data.success) {
+        //                 Swal.fire("Success", `Request ${decision}`, "success");
+        //                 this.$emit("updateDataTable");
+        //                 this.closeModal();
+        //             } else {
+        //                 Swal.fire("Error", data.error || "Request failed", "error");
+        //             }
+        //         })
+        //         .catch(err => {
+        //             console.error(err);
+        //             Swal.fire("Error", "Something went wrong", "error");
+        //         });
+        // },
+
+        async submitDecision(decision) {
+            // prevent double click
+            if (this.approving) return;
+            this.approving = true;
+
+            try {
+                // For APPROVED only: generate pdf
+                let pdfBlob = null;
+                if (decision === "APPROVED") {
+                    pdfBlob = await this.generateOBOTPdfBlob();
+                }
+
+                // Always use FormData
+                const fd = new FormData();
+                fd.append("args", decision);
+                fd.append("ref_number", this.ob_ot_Request.ref_number);
+                fd.append("user", `${this.user.first_name} ${this.user.last_name}`);
+                fd.append("emp_id", this.ob_ot_Request.emp_id);
+
+                // Attach PDF only when APPROVED
+                if (pdfBlob) {
+                    fd.append("pdf", pdfBlob, `${this.ob_ot_Request.ref_number}.pdf`);
+                }
+
+                const res = await fetch(`${API_BASE}/update_approved_deny_otob`, {
+                    method: "POST",
+                    body: fd, // ✅ no content-type header
                 });
+
+                const data = await res.json();
+                if (!res.ok || !data.success) throw new Error(data.error || "Request failed");
+
+                this.approving = false;
+
+                await Swal.fire({
+                    icon: "success",
+                    title: `Request ${decision}`,
+                    html: decision === "APPROVED" ? "<b>Email sent to HR.</b>" : "",
+                    confirmButtonColor: "#28a745",
+                });
+
+                this.$emit("updateDataTable");
+                this.closeModal();
+
+            } catch (err) {
+                this.approving = false;
+                Swal.fire("Error", err?.message || "Something went wrong", "error");
+            }
         },
+
+
 
         // formatDateTime2(date) {
         //     if (!date) return '';
@@ -412,7 +511,7 @@ export default {
         formatForDateTimeLocal(value) {
             if (!value) return '';
 
-            const d = new Date(value); 
+            const d = new Date(value);
 
             const year = d.getUTCFullYear();
             const month = String(d.getUTCMonth() + 1).padStart(2, '0');
@@ -438,7 +537,7 @@ export default {
                 user: `${this.user.first_name} ${this.user.last_name}`
             };
 
-            console.log(payload)
+            // console.log(payload)
             fetch(`${API_BASE}/update_actual_date`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -513,4 +612,43 @@ textarea {
     pointer-events: none;
     z-index: -1;
 }
+
+.screen-loader{
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45); /* dark overlay */
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 16px;
+}
+
+.loader-card{
+  width: min(360px, 100%);
+  background: #fff;
+  border-radius: 16px;
+  padding: 18px 20px;
+  box-shadow: 0 20px 60px rgba(0,0,0,.18);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.loader-title{
+  margin-top: 12px;
+  font-weight: 700;
+  font-size: 16px;
+  color: #2b6777;
+}
+
+.loader-subtitle{
+  margin-top: 6px;
+  font-size: 13px;
+  color: #475569;
+  line-height: 1.4;
+}
+
 </style>

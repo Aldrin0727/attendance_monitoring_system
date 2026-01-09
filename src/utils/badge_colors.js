@@ -12,10 +12,14 @@ export const jobTitleColors = {
 
 export const statusColors = {
   "FOR DEPARTMENT HEAD APPROVAL": "badge custom-blue text-white custom-badge fw-normal",
+  "FOR PRE-APPROVAL": "badge custom-blue text-white custom-badge fw-normal",
   "APPROVED": "badge custom-green-2 text-white custom-badge fw-normal",
   "DENIED": "badge custom-violet text-white custom-badge fw-normal",
-  "FOR HR RECORD": "badge custom-orange text-white custom-badge fw-normal",
+  "PRE-APPROVED": "badge custom-orange text-white custom-badge fw-normal",
   "CANCELLED": "badge custom-red-2 text-white custom-badge fw-normal",
+  "FOR FINAL APPROVAL": "badge custom-yellow-2 text-dark custom-badge fw-normal",
+  
+
 };
 
 export const leave_type_Colors = {

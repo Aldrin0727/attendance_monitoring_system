@@ -51,8 +51,8 @@
                     <div class="value">{{ request.ref_number }}</div>
                 </div>
                 <div class="field">
-                    <label>Type</label>
-                    <div class="value">{{ request.type }}</div>
+                    <label>Date Created</label>
+                    <div class="value">{{ formatApproved(request.date_created) }}</div>
                 </div>
                 <div class="field">
                     <label>Category</label>
@@ -78,7 +78,7 @@
             <div class="grid-2 mt-3">
                 <div class="field">
                     <label>Reason</label>
-                    <div class="value box">{{ request.reason || '-' }}</div>
+                    <div class="value box">{{ request.request_reason || '-' }}</div>
                 </div>
                 <div class="field">
                     <label>Project</label>
@@ -111,14 +111,19 @@
         <div class="card">
             <div class="card-title">APPROVAL</div>
 
-            <div class="grid-2">
+            <div class="grid-3">
                 <div class="field">
                     <label>Approved By</label>
                     <div class="value">{{ request.approved_by }}</div>
                 </div>
-                <div class="field">
+               <div class="field">
                     <label>Date Approved</label>
-                    <div class="value">{{ format(request.date_approved) }}</div>
+                    <div class="value">{{ formatApproved(request.date_approved) }}</div>
+                </div>
+
+                <div class="field">
+                    <label>Status</label>
+                    <div class="value">{{ request.status }}</div>
                 </div>
             </div>
         </div>
@@ -151,6 +156,15 @@ export default {
 
 
             return `${year}-${month}-${day} ${hours}:${minutes}`;
+        },
+        formatApproved(dt) {
+            if (!dt) return "";
+
+            const d = new Date(dt);
+            const pad = (n) => String(n).padStart(2, "0");
+
+            return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())} ` +
+                `${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}:${pad(d.getUTCSeconds())}`;
         }
 
     }

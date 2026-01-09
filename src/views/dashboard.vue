@@ -29,7 +29,7 @@
 
     <div class="col-lg-3" v-if="user.job_title === 'Department Head'">
       <div class="btn btn-info d-flex justify-content-between align-items-center"
-        @click.prevent="goTo_OB_OTRequests('FOR DEPARTMENT HEAD APPROVAL', user.job_title)" style="cursor: pointer;">
+        @click.prevent="goTo_OB_OTRequests('FOR PRE-APPROVAL', user.job_title)" style="cursor: pointer;">
         <div class="d-flex align-items-center">
           <font-awesome-icon :icon="['fas', 'user-check']" class="me-2" style="color: #219ebc" />
           <span class="fw-bold" style="color: #219ebc">Pending for OT/OB Approval</span>
