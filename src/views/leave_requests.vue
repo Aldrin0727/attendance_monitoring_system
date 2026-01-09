@@ -33,7 +33,7 @@
         </div>
 
         <!-- DataTable -->
-    <div class="card p-4 mt-3">
+        <div class="card p-4 mt-3">
             <!-- <DataTable v-if="leaveRequests.length" :key="datatableKey"
                 class="table table-striped table-bordered display custom-table" :columns="columns" :data="leaveRequests"
                 :options="datatableOptions" /> -->
@@ -75,8 +75,14 @@ export default {
         DataTable,
         leave_approval
     },
+    beforeUnmount() {
+        this.stopAutoRefresh();
+        $(document).off("click", ".view-leave-req");
+    },
+
     data() {
         return {
+            refreshTimer: null,
             user: getUserData() || {},
             leaveRequests: [],
             datatableKey: 0,
@@ -150,7 +156,21 @@ export default {
         }
     },
     methods: {
-      
+        startAutoRefresh() {
+            this.stopAutoRefresh();
+
+            this.refreshTimer = setInterval(() => {
+                if (this.is_modal_visible) return;
+                this.fetchUserLeaveRequests(); 
+            }, 60 * 1000); // 1 minute
+        },
+
+        stopAutoRefresh() {
+            if (this.refreshTimer) {
+                clearInterval(this.refreshTimer);
+                this.refreshTimer = null;
+            }
+        },
    
 
         fetchUserLeaveRequests() {
@@ -204,6 +224,7 @@ export default {
     },
     mounted() {
         this.fetchUserLeaveRequests();  // Fetch leave requests initially
+        this.startAutoRefresh();
 
         this.$nextTick(() => {
             // Use jQuery to handle event delegation for dynamically generated elements

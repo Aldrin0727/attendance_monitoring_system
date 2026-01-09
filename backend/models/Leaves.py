@@ -9,8 +9,39 @@ from emails import send_vl_leave_request_email
 
 leave_bp = Blueprint('leave_bp', __name__)
 
+def expire_pending_vl():
+    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
 
- 
+    cursor.execute("""
+        SELECT ref_no, user
+        FROM Leave_Details
+        WHERE leave_type = 'VL'
+          AND status = 'FOR DEPARTMENT HEAD APPROVAL'
+          AND DATE(leave_from) < CURDATE()
+    """)
+    rows = cursor.fetchall()
+
+    if rows:
+        cursor.execute("""
+            UPDATE Leave_Details
+            SET status = 'CANCELLED'
+            WHERE leave_type = 'VL'
+              AND status = 'FOR DEPARTMENT HEAD APPROVAL'
+              AND DATE(leave_from) < CURDATE()
+        """)
+
+        cursor.executemany("""
+            INSERT INTO leave_history (module, ref_no, action, `user`, history_date)
+            VALUES (%s, %s, %s, %s, NOW())
+        """, [
+            ('LEAVES', r['ref_no'], 'Auto-expired (Date From already passed)', r['user'])
+            for r in rows
+        ])
+
+        mysql.connection.commit()
+
+    cursor.close()
+
  
 @leave_bp.route('/create_leave', methods=['POST'])
 def add_leave_details():
@@ -104,6 +135,8 @@ def add_leave_details():
 @leave_bp.route("/for_approval_count", methods=['POST'])
 def get_count_approval():
     try:
+        expire_pending_vl()
+
         data = request.get_json()
         username = data.get("fullName")
         position = data.get("job_title")
@@ -183,13 +216,15 @@ def get_count_approval():
         return jsonify({
             "app_count": app_count, "success": True,"fapp_count":fapp_count,"fullName": username, 
             "used_vl":used_vl,"used_sl":used_sl,"vl_remaining" : remaining_vl,"sl_remaining" :remaining_sl
-            }), 201
+            }), 200
     except Exception as e:
         return jsonify({"error": str(e)}),500
     
 @leave_bp.route('/leave_list', methods=['POST'])
 def get_leave_list():
-    try:   
+    try:
+        expire_pending_vl()
+
         data = request.get_json()
         username = data.get("fullName")
         status = data.get("status")
@@ -218,7 +253,7 @@ def get_leave_list():
         forapp_list =  cursor.fetchall()
 
         cursor.close()
-        return jsonify({"forapp_list":forapp_list, "success": True}), 201
+        return jsonify({"forapp_list":forapp_list, "success": True}), 200
     
     #    return jsonify({"forapp_list":forapp_list,"app_list":app_list,"success":True}), 200
     except Exception as e:
@@ -226,7 +261,8 @@ def get_leave_list():
  
 @leave_bp.route('/all_leave_details', methods=['POST'])
 def get_all_leave_details():
-    try:   
+    try:
+        expire_pending_vl()
         # get leave details
         data = request.get_json()
         username = data.get("fullName")
@@ -250,7 +286,7 @@ def get_all_leave_details():
                     FROM Leave_Details
                     LEFT JOIN `{Config.MYSQL_DB2}`.users
                         ON Leave_Details.emp_id = ticketing_dev.users.emp_id
-                    WHERE Leave_Details.department = %s;
+                    WHERE Leave_Details.department = %s
 
                     """
             values = [department]
@@ -292,7 +328,7 @@ def get_all_leave_details():
                 row["leave_to"] = row["leave_to"].strftime("%Y-%m-%d")
 
         cursor.close()
-        return jsonify({"all_list":all_list, "success": True}), 201
+        return jsonify({"all_list":all_list, "success": True}), 200
     except Exception as e:
         return jsonify({"error": str(e)}),500
     
@@ -343,8 +379,6 @@ def update_approved__deny_leaves():
         remaining_sl = max_leave - (used_sl + used_count)
 
 
-       
-
         cursor.execute("""
             SELECT leave_type as leave_type from Leave_Details where ref_no = %s
         """, (ref_no,))  
@@ -372,13 +406,24 @@ def update_approved__deny_leaves():
             all_list = cursor.fetchone()
 
             # Send email AFTER commit + refetch
-            send_vl_leave_request_email(
-                mail,
-                all_list['user'], all_list['position'], all_list['dept_code'],
-                all_list['leave_number'], all_list['leave_from'], all_list['leave_to'],
-                all_list['leave_reason'], all_list['email'], all_list['leave_type'],
-                pdf_file
-            )
+            if pdf_file:
+                cursor.execute(detail_qry, (ref_no,))
+                all_list = cursor.fetchone()
+
+                send_vl_leave_request_email(
+                    mail,
+                    all_list['user'],
+                    ref_no,
+                    all_list['position'],
+                    all_list['dept_code'],
+                    all_list['leave_number'],
+                    all_list['leave_from'],
+                    all_list['leave_to'],
+                    all_list['leave_reason'],
+                    all_list['email'],
+                    all_list['leave_type'],
+                    pdf_file=pdf_file
+                )
  
         elif args == "CANCELLED" :
             cursor.execute(
@@ -413,6 +458,8 @@ def update_approved__deny_leaves():
 @leave_bp.route('/date_calendar', methods=['POST'])
 def get_calendar_date():
     try:
+        expire_pending_vl()
+
         data = request.get_json()
         department = data.get("dept_code")
 
@@ -431,29 +478,89 @@ def get_calendar_date():
 
         cursor.close()
 
-        return jsonify({"success": True,"dateall":dateall,"otoball":otoball}), 201
+        return jsonify({"success": True,"dateall":dateall,"otoball":otoball}), 200
 
     except Exception as e:
         return jsonify({"error": str(e)}),500
+
+# @leave_bp.route('/get_leaves_for_approval_request_date', methods=['POST'])
+# def get_leaves_for_approval_request_date():
+#     try:
+#         data = request.get_json()
+#         emp_id = data.get("emp_id")
+
+#         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+#         cursor.execute("""
+#             SELECT  leave_from,leave_to, leave_type from Leave_Details where emp_id = %s and (status = 'FOR DEPARTMENT HEAD APPROVAL' || status = 'APPROVED')
+#         """, (emp_id,))  
+#         alldates = cursor.fetchall()
+
+#         cursor.close()
+
+#         return jsonify({"success": True,"alldates":alldates}), 201
+#     except Exception as e:
+#         return jsonify({"error": str(e)}),500
 
 @leave_bp.route('/get_leaves_for_approval_request_date', methods=['POST'])
 def get_leaves_for_approval_request_date():
     try:
+        expire_pending_vl()
+
         data = request.get_json()
         emp_id = data.get("emp_id")
+        leave_type = data.get("leave_type")
+        ref_no = data.get("ref_no") 
 
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+
         cursor.execute("""
-            SELECT  leave_from,leave_to from Leave_Details where emp_id = %s and (status = 'FOR DEPARTMENT HEAD APPROVAL' || status = 'APPROVED')
-        """, (emp_id,))  
+            SELECT ref_no, leave_from, leave_to, leave_type, status
+            FROM Leave_Details
+            WHERE emp_id = %s AND status IN ('FOR DEPARTMENT HEAD APPROVAL', 'APPROVED')
+        """, (emp_id,))
         alldates = cursor.fetchall()
+
+        last_taken = None
+        if leave_type:
+            if ref_no:
+                cursor.execute("""
+                    SELECT leave_to
+                    FROM Leave_Details
+                    WHERE emp_id = %s
+                      AND status = 'APPROVED'
+                      AND leave_type = %s
+                      AND leave_to <= CURDATE()
+                      AND ref_no <> %s          -- ✅ exclude current
+                    ORDER BY leave_to DESC
+                    LIMIT 1
+                """, (emp_id, leave_type, ref_no))
+            else:
+                cursor.execute("""
+                    SELECT leave_to
+                    FROM Leave_Details
+                    WHERE emp_id = %s
+                      AND status = 'APPROVED'
+                      AND leave_type = %s
+                      AND leave_to <= CURDATE()
+                    ORDER BY leave_to DESC
+                    LIMIT 1
+                """, (emp_id, leave_type))
+
+            row = cursor.fetchone()
+            last_taken = row["leave_to"] if row else None
 
         cursor.close()
 
-        return jsonify({"success": True,"alldates":alldates}), 201
+        return jsonify({
+            "success": True,
+            "alldates": alldates,
+            "last_taken": last_taken
+        }), 200
+
     except Exception as e:
-        return jsonify({"error": str(e)}),500
-    
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
 @leave_bp.route('/update_denied_leaves', methods=['POST'])
 def update_denied_leaves():
     try:

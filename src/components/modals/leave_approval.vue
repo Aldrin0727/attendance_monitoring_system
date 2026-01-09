@@ -96,7 +96,8 @@
                                         :value="toYMD(leaveRequest.leave_to)" readonly />
 
                                     <!-- EDIT MODE -->
-                                    <input v-else type="date" class="form-control" v-model="editableLeave.leave_to" :min="originalLeaveFrom" />
+                                    <input v-else type="date" class="form-control" v-model="editableLeave.leave_to"
+                                        :min="originalLeaveFrom" />
                                 </div>
 
                             </div>
@@ -172,6 +173,23 @@
                             </div>
                         </div>
 
+                      <!-- LEAVE HISTORY -->
+                        <div class="section mt-3"  v-if="leaveRequest.status === 'APPROVED' || leaveRequest.status === 'FOR DEPARTMENT HEAD APPROVAL'">
+                            <div class="section-title">LEAVE HISTORY</div>
+                            <hr class="mt-0 mb-2">
+
+                            <div class="row">
+                                <div class="col-6">
+                                    <label class="form-label label-sm">Last Approved Leave Taken</label>
+                                    <input type="text" class="form-control" :value="toYMD(this.lastApprovedLeaveTaken)"
+                                        readonly />
+                                    <!-- <small style="color:#6b7280;font-size:12px;display:block;margin-top:4px;">
+                                        Based on the latest approved leave.
+                                    </small> -->
+                                </div>
+                            </div>
+                        </div>
+
                     </div>
 
                     <!-- Modal Footer -->
@@ -231,11 +249,21 @@
 
                         </div>
 
+                  </div>
+
+                    <div v-if="approving" class="screen-loader" role="dialog" aria-modal="true"
+                        aria-label="Processing approval">
+                        <div class="loader-card">
+                            <div class="spinner-border" aria-hidden="true"></div>
+
+                            <div class="loader-title">Processing approval</div>
+                            <div class="loader-subtitle">Please wait while we send the email to HR.</div>
+                        </div>
                     </div>
 
                 </form>
 
-                <leaves_print ref="leavePdf" :request="leaveRequest" v-show="showLeavePdf" />
+                <leaves_print ref="leavePdf" :request="leaveRequest" v-show="showLeavePdf"  :last-approved-leave-taken="lastApprovedLeaveTaken" />
 
 
 
@@ -273,6 +301,7 @@ export default {
 
             approving: false,
             denying: false,
+            lastApprovedLeaveTaken: null, 
         }
     },
 
@@ -288,6 +317,8 @@ export default {
                 this.editableLeave.leave_to = val.leave_to;
                 this.editableLeave.leave_reason = val.leave_reason || "";
                 this.editableLeave.leave_number = val.leave_number || "";
+
+                this.fetchExistingLeaves();
             }
         },
 
@@ -398,20 +429,52 @@ export default {
             });
         },
 
+        // fetchExistingLeaves() {
+        //     console.log(this.user.emp_id)
+        //     fetch(`${API_BASE}/get_leaves_for_approval_request_date`, {
+        //         method: "POST",
+        //         headers: { "Content-Type": "application/json" },
+        //         body: JSON.stringify({
+        //             emp_id: this.user.emp_id
+        //         })
+        //     })
+        //         .then(res => res.json())
+        //         .then(data => {
+        //             console.log(data)
+        //             this.existingLeaves = data.alldates || [];
+                    
+        //         });
+        // },
+
         fetchExistingLeaves() {
+            const empId = this.leaveRequest?.emp_id;
+            const leaveType = this.leaveRequest?.leave_type;
+            const ref_no = this.leaveRequest?.ref_no;
+            if (!empId) return;
+
             fetch(`${API_BASE}/get_leaves_for_approval_request_date`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    emp_id: this.user.emp_id
+                    emp_id: empId,
+                    leave_type: leaveType,
+                    ref_no: ref_no
                 })
             })
                 .then(res => res.json())
                 .then(data => {
-                    // console.log(data)
+                    if (!data.success) throw new Error(data.error || "Fetch failed");
+
                     this.existingLeaves = data.alldates || [];
+                    this.lastApprovedLeaveTaken = data.last_taken || null; // ✅ from backend
+                    
+                })
+                .catch(() => {
+                    this.existingLeaves = [];
+                    this.lastApprovedLeaveTaken = null;
                 });
         },
+
 
         normalizeDate(d) {
             if (!d) return null;
@@ -530,64 +593,65 @@ export default {
             this.$emit("close");
         },
 
-        approveLeaveRequest() {
-            if (!this.canApprove) return;
+        async approveLeaveRequest() {
+            if (!this.canApprove || this.approving) return;
 
             this.approving = true;
 
-            const fd = new FormData();
-            fd.append("args", "APPROVED");
-            fd.append("ref_no", this.leaveRequest.ref_no);
-            fd.append("user", `${this.user.first_name} ${this.user.last_name}`);
-            fd.append("emp_id", this.leaveRequest.emp_id);
+            await this.$nextTick();
+            await new Promise(r => setTimeout(r, 0));
 
-            fetch(`${API_BASE}/approved_deny_leaves`, {
-                method: "POST",
-                body: fd
-            })
-                .then(res => res.json())
-                .then(data => {
-                    if (!data.success) throw new Error("Approval failed");
+            try {
+                // STEP 1: APPROVE
+                const fd = new FormData();
+                fd.append("args", "APPROVED");
+                fd.append("ref_no", this.leaveRequest.ref_no);
+                fd.append("user", `${this.user.first_name} ${this.user.last_name}`);
+                fd.append("emp_id", this.leaveRequest.emp_id);
 
-                    // UPDATE UI STATE
-                    this.leaveRequest.status = "APPROVED";
+                const res1 = await fetch(`${API_BASE}/approved_deny_leaves`, { method: "POST", body: fd });
+                const data1 = await res1.json();
+                if (!res1.ok || !data1.success) throw new Error(data1.error || "Approval failed");
 
-                    // STEP 2: NOW GENERATE PDF (APPROVED NA)
-                    return this.generateLeavePdfBlob();
-                })
-                .then(pdfBlob => {
-                    const fd2 = new FormData();
-                    fd2.append("args", "APPROVED");
-                    fd2.append("ref_no", this.leaveRequest.ref_no);
-                    fd2.append("user", `${this.user.first_name} ${this.user.last_name}`);
-                    fd2.append("emp_id", this.leaveRequest.emp_id);
-                    fd2.append("pdf", pdfBlob, `${this.leaveRequest.ref_no}.pdf`);
+                this.leaveRequest.status = "APPROVED";
 
-                    // STEP 3: SEND PDF FOR EMAIL
-                    return fetch(`${API_BASE}/approved_deny_leaves`, {
-                        method: "POST",
-                        body: fd2
-                    });
-                })
-                .then(() => {
-                    Swal.fire({
-                        icon: "success",
-                        title: "Leave approved successfully.",
-                        html: `
-                            <b>Email sent to HR.</b>
-            `,
-                        confirmButtonColor: "#28a745"
-                    });
-                    this.$emit("updateDataTable");
-                    this.closeModal();
-                })
-                .catch(() => {
-                    Swal.fire("Error", "Something went wrong", "error");
-                })
-                .finally(() => {
-                    this.approving = false;
+                // STEP 2: GENERATE PDF
+                const pdfBlob = await this.generateLeavePdfBlob();
+
+                // STEP 3: SEND EMAIL
+                const fd2 = new FormData();
+                fd2.append("args", "APPROVED");
+                fd2.append("ref_no", this.leaveRequest.ref_no);
+                fd2.append("user", `${this.user.first_name} ${this.user.last_name}`);
+                fd2.append("emp_id", this.leaveRequest.emp_id);
+                fd2.append("pdf", pdfBlob, `${this.leaveRequest.ref_no}.pdf`);
+
+                const res2 = await fetch(`${API_BASE}/approved_deny_leaves`, { method: "POST", body: fd2 });
+                const data2 = await res2.json();
+                if (!res2.ok || !data2.success) throw new Error(data2.error || "Email sending failed");
+
+                // stop button loading FIRST (button-only loading)
+                this.approving = false;
+
+                await Swal.fire({
+                    icon: "success",
+                    title: "Leave approved successfully.",
+                    html: "<b>Email sent to HR.</b>",
+                    confirmButtonColor: "#28a745"
                 });
-        },
+
+                this.$emit("updateDataTable");
+                // this.closeModal();
+
+            } catch (err) {
+           
+                this.approving = false;
+
+                Swal.fire("Error", err?.message || "Something went wrong", "error");
+            }
+        }
+
+        ,
 
 
 
@@ -722,6 +786,34 @@ export default {
             return diffDays;
         },
 
+        getLastApprovedLeaveTaken() {
+            const todayUtc = new Date();
+            const todayUtcMidnight = new Date(Date.UTC(
+                todayUtc.getUTCFullYear(),
+                todayUtc.getUTCMonth(),
+                todayUtc.getUTCDate()
+            ));
+
+            const currentRef = this.leaveRequest?.ref_no;
+            const currentType = this.leaveRequest?.leave_type; // filter by this
+
+            const rows = (this.existingLeaves || [])
+                .filter(lv => lv.status === "APPROVED")
+                .filter(lv => lv.ref_no !== currentRef)                 // ignore current request
+                .filter(lv => String(lv.leave_type).trim() === String(currentType).trim()) // sAME TYPE
+                .filter(lv => lv.leave_to)
+                .map(lv => {
+                    const toUTC = this.utcMidnight(lv.leave_to);
+                    return { ...lv, _toUTC: toUTC };
+                })
+                .filter(lv => lv._toUTC) // valid dates only
+                .filter(lv => lv._toUTC.getTime() <= todayUtcMidnight.getTime()) // taken = ended
+                .sort((a, b) => b._toUTC - a._toUTC);
+
+            return rows.length ? rows[0].leave_to : null;
+        },
+
+
 
     },
 
@@ -739,6 +831,10 @@ export default {
         // },
         // formattedLeaveFrom() {
         //     return this.leaveRequest.leave_from;
+        // },
+
+        // lastApprovedLeaveTakenYMD() {
+        //     return this.lastApprovedLeaveTaken ? this.toYMD(this.lastApprovedLeaveTaken) : "-";
         // },
         formatteddate_approved() {
 
@@ -935,4 +1031,43 @@ input:focus {
 .remaining_balance {
     background-color: #80e183dc !important;
 }
+
+.screen-loader{
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45); /* dark overlay */
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 16px;
+}
+
+.loader-card{
+  width: min(360px, 100%);
+  background: #fff;
+  border-radius: 16px;
+  padding: 18px 20px;
+  box-shadow: 0 20px 60px rgba(0,0,0,.18);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.loader-title{
+  margin-top: 12px;
+  font-weight: 700;
+  font-size: 16px;
+  color: #2b6777;
+}
+
+.loader-subtitle{
+  margin-top: 6px;
+  font-size: 13px;
+  color: #475569;
+  line-height: 1.4;
+}
+
 </style>

@@ -138,7 +138,7 @@ def get_otob_count_approval():
             "app_count": app_count, 
             "success": True,
             "user_count" : user_count
-            }), 201
+            }), 200
     
     except Exception as e:
         return jsonify({"error": str(e)}),500

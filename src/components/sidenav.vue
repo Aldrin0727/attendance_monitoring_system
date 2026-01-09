@@ -40,8 +40,8 @@
                         </a>
 
                         <ul v-show="dropdowns.parameters" class="submenu">
-                            <li :class="{ active: isActive('user_list') }" @click="navigate('user_list')">
-                                Users
+                            <li :class="{ active: isActive('holidays') }" @click="navigate('holidays')">
+                                Holidays
                             </li>
                         </ul>
                     </li>
@@ -142,12 +142,9 @@ export default {
     },
     methods: {
         navigate(view) {
-            let parametersSubmenus = ['employee_list', 'user_list'];
-            let assignmentsSubmenus = ['employee_assets', 'assign_asset', 'return_transfer_asset'];
-
-            if (assignmentsSubmenus.includes(view)) {
-                this.$router.push({ path: `/assignments/${view}` });
-            } else if (parametersSubmenus.includes(view)) {
+            let parametersSubmenus = ['holidays', 'user_list'];
+            
+            if (parametersSubmenus.includes(view)) {
                 this.$router.push({ path: `/parameters/${view}` });
             } else {
                 this.$router.push({ path: `/${view}` });
@@ -156,8 +153,7 @@ export default {
         isActive(view) {
             return (
                 this.$route.path === `/${view}` ||
-                this.$route.path.startsWith(`/parameters/${view}`) ||
-                this.$route.path.startsWith(`/assignments/${view}`)
+                this.$route.path.startsWith(`/parameters/${view}`) 
             );
         },
         toggleDropdown(menu) {

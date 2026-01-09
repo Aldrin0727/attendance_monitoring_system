@@ -30,6 +30,12 @@ const routes = [
     meta: { requiresAuth: true },
   },
    {
+    path: "/parameters/holidays",
+    name: "Holidays",
+    component: () => import("../views/holidays.vue"),
+    meta: { requiresAuth: true },
+  },
+   {
     path: "/ob_ot",
     name: "OB_OT",
     component: () => import("../views/ob_ot.vue"),

@@ -15,7 +15,7 @@
             <div class="col-lg-3"></div>
 
             <div class="col-lg-9 d-flex justify-content-end align-items-center">
-                <button class="btn btn-secondary ob_ot" @click="file_leave_btn">
+                <button class="btn btn-secondary ob_ot" @click="file_ob_ot_btn">
                     <font-awesome-icon :icon="['fas', 'circle-plus']" class="me-2" />
                     File an OT/OB
                 </button>
@@ -152,7 +152,7 @@ export default {
     },
 
     methods: {
-        file_leave_btn() {
+        file_ob_ot_btn() {
             this.is_file_ob_ot_modal_visible = true;
         },
 
