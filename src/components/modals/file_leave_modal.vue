@@ -98,14 +98,14 @@
                                         <label for="date_from" class="form-label label-sm">
                                             Date of Leave From <strong style="color: red">*</strong>
                                         </label>
-                                        <input type="date" id="date_from" class="form-control"
+                                        <input type="date" id="date_from" class="form-control"  :class="{ 'border-danger': leaveForm.date_from && isHolidayYMD(leaveForm.date_from) }"
                                             v-model="leaveForm.date_from" required  :min="minDateFrom" :max="maxDateFrom" />
                                     </div>
                                     <div class="col-6">
                                         <label for="date_to" class="form-label label-sm">
                                             Date of Leave To <strong style="color: red">*</strong>
                                         </label>
-                                        <input type="date" id="date_to" class="form-control" v-model="leaveForm.date_to"
+                                        <input type="date" id="date_to" class="form-control" v-model="leaveForm.date_to"  :class="{ 'border-danger': leaveForm.date_from && isHolidayYMD(leaveForm.date_from) }"
                                             :min="minDateTo"
   :max="maxDateTo" :disabled="isHalfDay" required />
                                     </div>
@@ -156,7 +156,7 @@ export default {
         return {
             user: getUserData() || {},
             selectedTypeofLeave: "",
-            existingLeaves: [],
+            existingLeaves: [], 
             leaveForm: {
                 date_from: "",
                 date_to: "",
@@ -170,6 +170,9 @@ export default {
                 VL: 0,
                 SL: 0,
             },
+            holidays: [],
+            holidaySet: new Set(), // contains "MM-DD" (ACTIVE only)
+
         };
     },
     computed: {
@@ -204,20 +207,20 @@ export default {
             return `${y}-${m}-${day}`;
         },
 
-        // ✅ min date for Date From
+        // min date for Date From
         minDateFrom() {
             if (this.selectedTypeofLeave === "VL") return this.tomorrowYMD; // tomorrow start
             return null; // no min for SL/EL
         },
 
-        // ✅ max date for Date From
+        // max date for Date From
         maxDateFrom() {
             if (this.selectedTypeofLeave === "SL") return this.todayYMD;
             if (this.selectedTypeofLeave === "EL") return this.todayYMD; // same as SL per your rule
             return null; // no max for VL
         },
 
-        // ✅ Date To follows same rule
+        // Date To follows same rule
         minDateTo() {
             // if halfday, date_to locked anyway, but still safe:
             if (this.leaveForm.half_day) return this.leaveForm.date_from || this.minDateFrom;
@@ -240,17 +243,41 @@ export default {
 
     },
     watch: {
+        // 'leaveForm.date_from'(val) {
+        //     // kapag half-day, auto-sync date_to
+        //     if (this.leaveForm.half_day && val) {
+        //         this.leaveForm.date_to = val;
+        //     }
+        //     this.calculateTotalLeaveDays();
+        // },
+
+        // 'leaveForm.date_to'() {
+        //     this.calculateTotalLeaveDays();
+        // },
+
         'leaveForm.date_from'(val) {
-            // kapag half-day, auto-sync date_to
-            if (this.leaveForm.half_day && val) {
-                this.leaveForm.date_to = val;
+            if (val && this.isHolidayYMD(val)) {
+                Swal.fire("Not allowed", "You cannot file leave on a holiday.", "warning");
+                this.leaveForm.date_from = "";
+                if (!this.isHalfDay) this.leaveForm.date_to = "";
+                this.leaveForm.total_leave_days = "";
+                return;
+            }
+
+            if (this.leaveForm.half_day && val) this.leaveForm.date_to = val;
+            this.calculateTotalLeaveDays();
+        },
+
+        'leaveForm.date_to'(val) {
+            if (val && this.isHolidayYMD(val)) {
+                Swal.fire("Not allowed", "You cannot include a holiday as your leave date.", "warning");
+                this.leaveForm.date_to = "";
+                this.leaveForm.total_leave_days = "";
+                return;
             }
             this.calculateTotalLeaveDays();
         },
 
-        'leaveForm.date_to'() {
-            this.calculateTotalLeaveDays();
-        },
 
         'leaveForm.half_day'(val) {
             // kapag nag-halfday, lock date_to = date_from
@@ -262,6 +289,39 @@ export default {
     },
 
     methods: {
+        fetchHolidays() {
+            fetch(`${API_BASE}/holidays_list`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({})
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (!data.success) throw new Error(data.error || "Failed to fetch holidays");
+
+                    this.holidays = data.holidays || [];
+                    const active = this.holidays.filter(h => String(h.status).toUpperCase() === "ACTIVE");
+                    this.holidaySet = new Set(active.map(h => h.holiday_date)); // MM-DD
+                })
+                .catch(() => {
+                    this.holidays = [];
+                    this.holidaySet = new Set();
+                });
+        },
+
+        toMMDD(ymd) {
+            if (!ymd) return "";
+            const parts = String(ymd).split("-");
+            if (parts.length !== 3) return "";
+            return `${parts[1]}-${parts[2]}`; // MM-DD
+        },
+
+        isHolidayYMD(ymd) {
+            const mmdd = this.toMMDD(ymd);
+            return mmdd ? this.holidaySet.has(mmdd) : false;
+        },
+
+
         getBalanceType(type) {
 
             if (type === 'EL') return 'VL';
@@ -331,96 +391,146 @@ export default {
             const to = this.leaveForm.date_to;
             const halfDay = this.leaveForm.half_day;
 
-            if (!this.selectedTypeofLeave) {
-                this.leaveForm.total_leave_days = "";
-                return;
-            }
-
-
-            if (!from || !to) {
-                this.leaveForm.total_leave_days = '';
-                return;
-            }
+            if (!this.selectedTypeofLeave) { this.leaveForm.total_leave_days = ""; return; }
+            if (!from || !to) { this.leaveForm.total_leave_days = ""; return; }
 
             const start = new Date(from);
             const end = new Date(to);
 
-            const today = new Date();
-            const todayOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-            const startOnly = new Date(start.getFullYear(), start.getMonth(), start.getDate());
-
-            // revent TO < FROM
             if (end < start) {
-                Swal.fire(
-                    "Invalid Date Range",
-                    "'Date To' cannot be earlier than 'Date From'.",
-                    "warning"
-                );
+                Swal.fire("Invalid Date Range", "'Date To' cannot be earlier than 'Date From'.", "warning");
                 this.leaveForm.date_to = "";
                 this.leaveForm.total_leave_days = "";
                 return;
             }
 
-            // SL & EL cannot be future date
-            if (["SL", "EL"].includes(this.selectedTypeofLeave)) {
-                if (startOnly.getTime() > todayOnly.getTime()) {
-                    Swal.fire(
-                        "Not Allowed",
-                        `${this.selectedTypeofLeave} cannot be filed for future dates.`,
-                        "warning"
-                    );
-                    this.leaveForm.date_from = "";
-                    this.leaveForm.date_to = "";
-                    this.leaveForm.total_leave_days = "";
-                    return;
-                }
+            // half-day force same date
+            if (halfDay && from !== to) this.leaveForm.date_to = from;
 
-                // OPTIONAL: kung gusto mo rin bawal today for SL only
-                if (this.selectedTypeofLeave === "SL" && startOnly.getTime() === todayOnly.getTime()) {
-                    Swal.fire(
-                        "Warning",
-                        "You cannot schedule Sick Leave (SL) dated today. SL is only for absences already incurred.",
-                        "warning"
-                    );
-                    this.leaveForm.date_from = "";
-                    this.leaveForm.date_to = "";
-                    this.leaveForm.total_leave_days = "";
-                    return;
-                }
-            }
-
-
-            // Enforce half-day rule
-            if (halfDay && from !== to) {
-                this.leaveForm.date_to = from;
-            }
-
-            // Convert dates to start of day
-            const msPerDay = 1000 * 60 * 60 * 24;
             const startDate = new Date(start.getFullYear(), start.getMonth(), start.getDate());
             const endDate = new Date(end.getFullYear(), end.getMonth(), end.getDate());
 
-            let diffDays = Math.floor((endDate - startDate) / msPerDay) + 1;
+            let count = 0;
 
-
-            let weekendCount = 0;
             for (let current = new Date(startDate); current <= endDate; current.setDate(current.getDate() + 1)) {
-                const dayOfWeek = current.getDay();
-                if (dayOfWeek === 0 || dayOfWeek === 6) weekendCount++;
+                const dow = current.getDay();
+                if (dow === 0 || dow === 6) continue; // weekend skip
+
+                const mm = String(current.getMonth() + 1).padStart(2, "0");
+                const dd = String(current.getDate()).padStart(2, "0");
+                const mmdd = `${mm}-${dd}`;
+
+                if (this.holidaySet.has(mmdd)) continue; // holiday skip ✅
+
+                count += 1;
             }
-            diffDays -= weekendCount;
 
-
+            // half-day: only valid if that day is not weekend/holiday (count must be 1)
             if (halfDay) {
-                diffDays = diffDays <= 1 ? 0.5 : diffDays - 0.5;
+                if (count <= 0) {
+                    Swal.fire("Not allowed", "Half-day cannot be filed on weekend/holiday.", "warning");
+                    this.leaveForm.half_day = "";
+                    this.leaveForm.total_leave_days = "";
+                    return;
+                }
+                count = 0.5;
             }
 
-            this.leaveForm.total_leave_days = diffDays;
-
-
-
-
+            this.leaveForm.total_leave_days = count;
         },
+
+
+        // calculateTotalLeaveDays() {
+        //     const from = this.leaveForm.date_from;
+        //     const to = this.leaveForm.date_to;
+        //     const halfDay = this.leaveForm.half_day;
+
+        //     if (!this.selectedTypeofLeave) {
+        //         this.leaveForm.total_leave_days = "";
+        //         return;
+        //     }
+
+
+        //     if (!from || !to) {
+        //         this.leaveForm.total_leave_days = '';
+        //         return;
+        //     }
+
+        //     const start = new Date(from);
+        //     const end = new Date(to);
+
+        //     const today = new Date();
+        //     const todayOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+        //     const startOnly = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+
+        //     // revent TO < FROM
+        //     if (end < start) {
+        //         Swal.fire(
+        //             "Invalid Date Range",
+        //             "'Date To' cannot be earlier than 'Date From'.",
+        //             "warning"
+        //         );
+        //         this.leaveForm.date_to = "";
+        //         this.leaveForm.total_leave_days = "";
+        //         return;
+        //     }
+
+        //     // SL & EL cannot be future date
+        //     if (["SL", "EL"].includes(this.selectedTypeofLeave)) {
+        //         if (startOnly.getTime() > todayOnly.getTime()) {
+        //             Swal.fire(
+        //                 "Not Allowed",
+        //                 `${this.selectedTypeofLeave} cannot be filed for future dates.`,
+        //                 "warning"
+        //             );
+        //             this.leaveForm.date_from = "";
+        //             this.leaveForm.date_to = "";
+        //             this.leaveForm.total_leave_days = "";
+        //             return;
+        //         }
+
+        //         // OPTIONAL: kung gusto mo rin bawal today for SL only
+        //         if (this.selectedTypeofLeave === "SL" && startOnly.getTime() === todayOnly.getTime()) {
+        //             Swal.fire(
+        //                 "Warning",
+        //                 "You cannot schedule Sick Leave (SL) dated today. SL is only for absences already incurred.",
+        //                 "warning"
+        //             );
+        //             this.leaveForm.date_from = "";
+        //             this.leaveForm.date_to = "";
+        //             this.leaveForm.total_leave_days = "";
+        //             return;
+        //         }
+        //     }
+
+
+        //     // Enforce half-day rule
+        //     if (halfDay && from !== to) {
+        //         this.leaveForm.date_to = from;
+        //     }
+
+        //     // Convert dates to start of day
+        //     const msPerDay = 1000 * 60 * 60 * 24;
+        //     const startDate = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+        //     const endDate = new Date(end.getFullYear(), end.getMonth(), end.getDate());
+
+        //     let diffDays = Math.floor((endDate - startDate) / msPerDay) + 1;
+
+
+        //     let weekendCount = 0;
+        //     for (let current = new Date(startDate); current <= endDate; current.setDate(current.getDate() + 1)) {
+        //         const dayOfWeek = current.getDay();
+        //         if (dayOfWeek === 0 || dayOfWeek === 6) weekendCount++;
+        //     }
+        //     diffDays -= weekendCount;
+
+
+        //     if (halfDay) {
+        //         diffDays = diffDays <= 1 ? 0.5 : diffDays - 0.5;
+        //     }
+
+        //     this.leaveForm.total_leave_days = diffDays;
+        // },
 
 
         submitForm() {
@@ -580,6 +690,7 @@ export default {
     mounted() {
         this.fetchExistingLeaves();
         this.fetchRemainingLeaves();
+        this.fetchHolidays();
     }
 };
 </script>
@@ -628,4 +739,9 @@ input:focus {
 #date_to:disabled{
   background-color: #a4d0ed !important;
 }
+
+.border-danger {
+  border: 1px solid #dc3545 !important;
+}
+
 </style>
