@@ -177,7 +177,7 @@
           </div>
           <div class="card-footer py-1 px-2">
             <a href="#" class="text-white d-flex justify-content-between align-items-center m-0"
-              style="text-decoration:none;" @click.prevent="goToLeaveRequests('FOR DEPARTMENT HEAD APPROVAL', '')">
+              style="text-decoration:none;" @click.prevent="goTo_OB_OTRequests('FOR DEPARTMENT HEAD APPROVAL', '')">
               <span>View Details</span>
               <i class="fas fa-arrow-right"></i>
             </a>
@@ -491,9 +491,10 @@ export default {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          fullName: `${this.user.first_name} ${this.user.last_name}`,
+          // fullName: `${this.user.first_name} ${this.user.last_name}`,
           job_title: this.user.job_title,
           department: this.user.dept_code,
+          emp_id: this.user.emp_id
         })
       })
         .then(res => res.json())

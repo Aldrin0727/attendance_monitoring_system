@@ -93,9 +93,15 @@ def get_otob_approval_list():
                 SELECT * from ot_ob LEFT JOIN `{Config.MYSQL_DB2}`.users ON ot_ob.emp_id = `{Config.MYSQL_DB2}`.users.emp_id  WHERE status = %s and ot_ob.department = %s"""
             values = [status, department]
         else:
-            base_query = f"""
-                SELECT * from ot_ob LEFT JOIN `{Config.MYSQL_DB2}`.users ON ot_ob.emp_id = `{Config.MYSQL_DB2}`.users.emp_id WHERE ot_ob.emp_id = %s"""
-            values = [emp_id]
+            if status == "FOR DEPARTMENT HEAD APPROVAL":
+                base_query = f"""
+                    SELECT * from ot_ob LEFT JOIN `{Config.MYSQL_DB2}`.users ON ot_ob.emp_id = `{Config.MYSQL_DB2}`.users.emp_id WHERE ot_ob.emp_id = %s and status ='FOR DEPARTMENT HEAD APPROVAL'"""
+                values = [emp_id]
+            else:
+                base_query = f"""
+                    SELECT * from ot_ob LEFT JOIN `{Config.MYSQL_DB2}`.users ON ot_ob.emp_id = `{Config.MYSQL_DB2}`.users.emp_id WHERE ot_ob.emp_id = %s """
+                values = [emp_id]
+            
         
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
         cursor.execute(base_query, tuple(values))
@@ -110,7 +116,7 @@ def get_otob_approval_list():
 def get_otob_count_approval():
     try:
         data = request.get_json()
-        username = data.get("fullName")
+        # username = data.get("fullName")
         position = data.get("job_title")
         department = data.get("department")
         emp_id = data.get("emp_id")
@@ -224,20 +230,20 @@ def update_actual_date():
     except Exception as e:
         return jsonify({"error": str(e)}),500
     
-@ot_ob_bp.route('/get_otob_for_approval_request_date', methods=['POST'])
-def get_otob_for_approval_request_date():
-    try:
-        data = request.get_json()
-        emp_id = data.get("emp_id")
+# @ot_ob_bp.route('/get_otob_for_approval_request_date', methods=['POST'])
+# def get_otob_for_approval_request_date():
+#     try:
+#         data = request.get_json()
+#         emp_id = data.get("emp_id")
 
-        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
-        cursor.execute("""
-            SELECT  * from ot_ob where emp_id = %s and (status = 'FOR DEPARTMENT HEAD APPROVAL' || status = 'APPROVED' || status = 'FOR HR RECORD')
-        """, (emp_id,))  
-        alldates = cursor.fetchall()
+#         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+#         cursor.execute("""
+#             SELECT  * from ot_ob where emp_id = %s and (status = 'FOR DEPARTMENT HEAD APPROVAL' || status = 'APPROVED' || status = 'FOR HR RECORD')
+#         """, (emp_id,))  
+#         alldates = cursor.fetchall()
 
-        cursor.close()
+#         cursor.close()
 
-        return jsonify({"success": True,"alldates":alldates}), 201
-    except Exception as e:
-        return jsonify({"error": str(e)}),500
+#         return jsonify({"success": True,"alldates":alldates}), 201
+#     except Exception as e:
+#         return jsonify({"error": str(e)}),500

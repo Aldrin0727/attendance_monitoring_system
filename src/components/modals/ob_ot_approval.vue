@@ -97,7 +97,7 @@
                         <div class="row">
                             <div class="col-6">
                                 <label class="form-label label-sm">Reason</label>
-                                <textarea class="form-control" rows="2" v-model="ob_ot_Request.reason"
+                                <textarea class="form-control" rows="2" v-model="ob_ot_Request.request_reason"
                                     readonly></textarea>
                             </div>
                             <div class="col-6">
@@ -164,7 +164,7 @@
                 </div>
 
                 <!-- FOOTER -->
-                <div class="modal-footer">
+                <div class="modal-footer justify-content-between">
                     <div v-if="canDownloadPdf">
                         <button class="btn btn-primary" @click="downloadPdf">
                             <i class="fas fa-print"></i> Print
@@ -180,7 +180,7 @@
                         <button class="btn btn-success me-2" @click="saveActualDates">
                             Save Actual {{ ob_ot_Request.type }} Dates
                         </button>
-                        <button class="btn btn-info" @click="closeModal">Close</button>
+                        <!-- <button class="btn btn-info" @click="closeModal">Close</button> -->
                     </div>
 
                     <div v-else>
@@ -272,6 +272,18 @@ export default {
 
 
     methods: {
+         formatDateTime(date) {
+            if (!date) return '';
+
+            const parts = date.split(' ');
+            const day = parts[1];
+            const month = parts[2];
+            const year = parts[3];
+            const time = parts[4]; // 13:51:52
+
+            return `${year}-${this.monthToNumber(month)}-${day} ${time}`;
+        },
+        
         downloadPdf() {
             this.showPdf = true;
 
@@ -305,10 +317,11 @@ export default {
             return d.toISOString().slice(0, 16); // yyyy-mm-ddTHH:mm
         },
 
-        formatDisplayDate(dt) {
-            if (!dt) return "";
-            return new Date(dt).toISOString().slice(0, 10);
-        },
+   formatDisplayDate(dt) {
+  if (!dt) return "";
+  return new Date(dt).toISOString().slice(0, 19).replace("T", " ");
+},
+
 
         approveRequest() {
             this.submitDecision("APPROVED");

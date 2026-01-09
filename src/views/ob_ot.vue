@@ -32,7 +32,7 @@
 
     <!-- File OB/OT Modal -->
     <file_ob_ot v-if="is_file_ob_ot_modal_visible" :isVisible="is_file_ob_ot_modal_visible"
-        @close="close_file_ob_ot_modal" />
+        @close="close_file_ob_ot_modal" @updateDataTable="fetchUserOBOTRequests"/>
 
     <!-- Approval Modal -->
     <ob_ot_approval v-if="is_modal_visible" :isVisible="is_modal_visible" :ob_ot_Request="selectedRequestOBOT"
@@ -171,6 +171,7 @@ export default {
                 department: this.user.dept_code,
                 emp_id: this.user.emp_id,
             };
+            console.log(payload)
 
             fetch(`${API_BASE}/get_otob_for_approval`, {
                 method: "POST",
@@ -180,7 +181,7 @@ export default {
                 .then((res) => res.json())
                 .then((data) => {
                     this.ob_ot_Requests = data.forapp_list || [];
-                    // console.log(data)
+                    console.log(data)
                     this.datatableKey++;
                 })
                 .catch((err) => console.error("Error fetching OB/OT list:", err));

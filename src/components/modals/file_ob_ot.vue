@@ -257,7 +257,8 @@ export default {
                 .then(data => {
                     if (data.success) {
                         Swal.fire("Success", "Request filed successfully", "success");
-
+                        this.$emit("updateDataTable");
+                        this.closeModal();
                     } else {
                         Swal.fire("Error", data.error || "Failed to submit request", "error");
                     }
@@ -268,7 +269,7 @@ export default {
                 });
 
             // Close modal after successful submit
-            this.closeModal();
+           
         }
     }
 }
