@@ -99,8 +99,6 @@
                                 <input type="datetime-local" class="form-control"
                                     :value="formatDateTime(ob_ot_Request.req_to)" readonly />
                             </div>
-
-
                         </div>
 
                         <div class="row">
@@ -118,7 +116,7 @@
                     </div>
 
                     <!-- ACTUAL OB/OT DATE INPUTS (Visible Only When Approved) -->
-                    <div class="section mt-3" v-if="['APPROVED', 'PRE-APPROVED'].includes(ob_ot_Request.status)">
+                    <div class="section mt-3" v-if="['APPROVED', 'PRE-APPROVED', 'FOR FINAL APPROVAL'].includes(ob_ot_Request.status)">
                         <div class="section-title">
                             Actual {{ ob_ot_Request.type }} Execution
                         </div>
@@ -128,13 +126,13 @@
                             <div class="col-5">
                                 <label class="form-label label-sm">Actual Start Date & Time</label>
                                 <input type="datetime-local" class="form-control" v-model="actualDates.actual_from"
-                                    :readonly="isHrRecord" />
+                                    :readonly="isHrRecord || isActualDateReadOnly" />
                             </div>
 
                             <div class="col-5">
                                 <label class="form-label label-sm">Actual End Date & Time</label>
                                 <input type="datetime-local" class="form-control" v-model="actualDates.actual_to"
-                                    :readonly="isHrRecord" />
+                                    :readonly="isHrRecord || isActualDateReadOnly" />
                             </div>
 
                             <div class="col-2">
@@ -143,6 +141,8 @@
                             </div>
                         </div>
                     </div>
+
+                    
 
 
 
@@ -245,6 +245,9 @@ export default {
         isHrRecord() {
             return this.ob_ot_Request.status === 'APPROVED';
         },
+         isActualDateReadOnly() {
+            return this.ob_ot_Request.status === 'FOR FINAL APPROVAL';
+         },
         canApprove() {
             return (
                 this.user.job_title === "Department Head" &&
@@ -269,7 +272,7 @@ export default {
             handler(val) {
                 //   console.log('RAW actual_from:', val.actual_from);
 
-                if (['FOR HR RECORD', 'APPROVED'].includes(val.status)) {
+                if (['FOR FINAL APPROVAL', 'APPROVED'].includes(val.status)) {
                     this.actualDates.actual_from =
                         this.formatForDateTimeLocal(val.actual_from);
 

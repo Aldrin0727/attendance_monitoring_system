@@ -14,7 +14,7 @@ def create_request():
         data = request.get_json()
         emp_id = data.get("emp_id")
         fullName = data.get("fullName")
-        type = data.get("type")  # Avoid using 'type' as it is a Python keyword
+        type = data.get("type")  
         category = data.get("category")
         destination = data.get("destination")
         req_from = data.get("req_from")
@@ -58,6 +58,7 @@ def create_request():
             VALUES (%s, %s, %s, %s, NOW())""",
             ('LEAVE SUBMITTED', newref_No, 'New Request Has been submitted', fullName)
         )
+        
 
         mysql.connection.commit()
         cursor.close()
@@ -91,10 +92,17 @@ def get_otob_approval_list():
         #     base_query += " AND emp_id = %s"
         #     values.append(emp_id)
 
-        if job_title == 'Department Head' and status == 'FOR PRE-APPROVAL':
+        if job_title == 'Department Head':
             base_query = f"""
-                SELECT * from ot_ob LEFT JOIN `{Config.MYSQL_DB2}`.users ON ot_ob.emp_id = `{Config.MYSQL_DB2}`.users.emp_id  WHERE status = %s and ot_ob.department = %s"""
-            values = [status, department]
+                SELECT *
+                FROM ot_ob
+                LEFT JOIN `{Config.MYSQL_DB2}`.users
+                ON ot_ob.emp_id = `{Config.MYSQL_DB2}`.users.emp_id
+                WHERE ot_ob.status IN ('FOR PRE-APPROVAL', 'FOR FINAL APPROVAL')
+                AND ot_ob.department = %s
+            """
+            values = [department]
+
         else:
             base_query = f"""
                 SELECT * from ot_ob LEFT JOIN `{Config.MYSQL_DB2}`.users ON ot_ob.emp_id = `{Config.MYSQL_DB2}`.users.emp_id WHERE ot_ob.emp_id = %s"""
@@ -108,43 +116,46 @@ def get_otob_approval_list():
         return jsonify({"forapp_list":forapp_list, "success": True}), 201
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-    
+
 @ot_ob_bp.route("/otob_approval_count", methods=['POST'])
 def get_otob_count_approval():
     try:
         data = request.get_json()
-        username = data.get("fullName")
         position = data.get("job_title")
         department = data.get("department")
         emp_id = data.get("emp_id")
 
+        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+
+        # default values
+        app_count = 0
 
         if position == "Department Head":
-            app_qry ="""
-            SELECT count(*) as app_count 
-            from ot_ob 
-            where department = %s 
-            and status = 'FOR PRE-APPROVAL'
-            """
-            params = (department,)
-
-        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
-        cursor.execute(app_qry,params)
-        app_count = cursor.fetchone()["app_count"]
+            cursor.execute("""
+                SELECT COUNT(*) AS app_count
+                FROM ot_ob
+                WHERE department = %s
+                  AND status IN ('FOR PRE-APPROVAL', 'FOR FINAL APPROVAL')
+            """, (department,))
+            app_count = cursor.fetchone()["app_count"]
 
         cursor.execute("""
-            SELECT count(*) as otob_user_count from ot_ob where emp_id = %s and status = 'FOR PRE-APPROVAL'
-        """, (emp_id,))  
+            SELECT COUNT(*) AS otob_user_count
+            FROM ot_ob
+            WHERE emp_id = %s
+              AND status IN ('FOR PRE-APPROVAL', 'FOR FINAL APPROVAL')
+        """, (emp_id,))
         user_count = cursor.fetchone()["otob_user_count"]
 
         return jsonify({
-            "app_count": app_count, 
-            "success": True,
-            "user_count" : user_count
-            }), 200
-    
+            "app_count": app_count,
+            "user_count": user_count,
+            "success": True
+        }), 200
+
     except Exception as e:
-        return jsonify({"error": str(e)}),500
+        return jsonify({"error": str(e)}), 500
+
     
 @ot_ob_bp.route('/date_otob_calendar', methods=['POST'])
 def get_otob_calendar_date():
@@ -280,7 +291,7 @@ def get_otob_for_approval_request_date():
 
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
         cursor.execute("""
-            SELECT  * from ot_ob where emp_id = %s and (status = 'FOR PRE-APPROVAL' || status = 'APPROVED' || status = 'FOR HR RECORD')
+            SELECT  * from ot_ob where emp_id = %s and (status = 'FOR PRE-APPROVAL' || status = 'APPROVED' || status = 'FOR FINAL APPROVAL')
         """, (emp_id,))  
         alldates = cursor.fetchall()
 

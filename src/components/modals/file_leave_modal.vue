@@ -131,11 +131,27 @@
 
                         <!-- Modal Footer -->
                         <div class="modal-footer m-0">
-                            <button type="submit" class="btn btn-success">Submit</button>
-                            <button type="button" class="btn btn-info" @click="closeModal">Close</button>
+                            <!-- <button type="submit" class="btn btn-success">Submit</button>
+                            <button type="button" class="btn btn-info" @click="closeModal">Close</button> -->
+                           <button type="submit" class="btn btn-success" :disabled="submitting">
+                                <span v-if="submitting">Submitting...</span>
+                                <span v-else>Submit</span>
+                            </button>
+
+                            <button type="button" class="btn btn-info" @click="closeModal"
+                                :disabled="submitting">Close</button>
                         </div>
                     </form>
                 </div>
+               <div v-if="submitting" class="screen-loader" role="dialog" aria-modal="true">
+                    <div class="loader-card">
+                        <div class="spinner-border" aria-hidden="true"></div>
+                        <div class="loader-title">Submitting Leave</div>
+                        <div class="loader-subtitle">Please wait while we submit your request and notify your Department
+                            Head thru email.</div>
+                    </div>
+                </div>
+
             </div>
         </div>
     </div>
@@ -172,7 +188,7 @@ export default {
             },
             holidays: [],
             holidaySet: new Set(), // contains "MM-DD" (ACTIVE only)
-
+             submitting: false,
         };
     },
     computed: {
@@ -592,6 +608,9 @@ export default {
             const remaining = Number(this.remainingLeaves[balanceType] || 0);
 
             const proceedSubmit = (isSalaryDeduction = false, excessDays = 0) => {
+                if (this.submitting) return;
+                this.submitting = true;
+
                 const formData = {
                     selectedTypeofLeave: this.selectedTypeofLeave,
                     fullName: this.fullName,
@@ -617,11 +636,13 @@ export default {
                     .then(res => res.json())
                     .then(data => {
                         if (data.success) {
+                            this.submitting = false;
+                            
                             Swal.fire(
                                 "Success",
                                 isSalaryDeduction
                                     ? "Leave filed. Excess days will be deducted from salary."
-                                    : "Leave filed successfully.",
+                                    : "Leave filed successfully. Your Department Head has been notified.",
                                 "success"
                             );
                             this.$emit("leave-submitted");
@@ -743,5 +764,44 @@ input:focus {
 .border-danger {
   border: 1px solid #dc3545 !important;
 }
+
+.screen-loader{
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 16px;
+}
+
+.loader-card{
+  width: min(360px, 100%);
+  background: #fff;
+  border-radius: 16px;
+  padding: 18px 20px;
+  box-shadow: 0 20px 60px rgba(0,0,0,.18);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.loader-title{
+  margin-top: 12px;
+  font-weight: 700;
+  font-size: 16px;
+  color: #df7a8a;
+}
+
+.loader-subtitle{
+  margin-top: 6px;
+  font-size: 13px;
+  color: #475569;
+  line-height: 1.4;
+}
+
 
 </style>

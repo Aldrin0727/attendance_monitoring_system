@@ -60,7 +60,7 @@ export default{
       this.showPassword = !this.showPassword;
     },
 
-        btn_login() {
+    btn_login() {
       if (!this.username || !this.password) {
         Swal.fire({
           icon: "error",

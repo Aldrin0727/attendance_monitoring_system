@@ -29,7 +29,7 @@
 
     <div class="col-lg-3" v-if="user.job_title === 'Department Head'">
       <div class="btn btn-info d-flex justify-content-between align-items-center"
-        @click.prevent="goTo_OB_OTRequests('FOR PRE-APPROVAL', user.job_title)" style="cursor: pointer;">
+        @click.prevent="goTo_OB_OTRequests('FOR APPROVAL', user.job_title)" style="cursor: pointer;">
         <div class="d-flex align-items-center">
           <font-awesome-icon :icon="['fas', 'user-check']" class="me-2" style="color: #219ebc" />
           <span class="fw-bold" style="color: #219ebc">Pending for OT/OB Approval</span>
@@ -251,6 +251,10 @@ export default {
       for_dept_head_approval_pending_ob_ot_user: 0,
       for_dept_head: 0,
 
+      holidaysRaw: [],    
+      holidaySet: new Set(),       // MM-DD
+      holidayEvents: [],
+
       leaveEvents: [],
 
       calendarOptions: {
@@ -265,6 +269,7 @@ export default {
           right: 'dayGridMonth,dayGridWeek'
         },
         eventContent: this.customEventRendering,
+        datesSet: this.onDatesSet,
       }
     }
   },
@@ -385,6 +390,59 @@ export default {
     handleDateClick(info) {
       const clickedDate = info.dateStr; // YYYY-MM-DD
 
+     if (this.isHolidayYMD(clickedDate)) {
+  const name = this.getHolidayNameByYMD(clickedDate) || "Holiday";
+
+  Swal.fire({
+    title: `<span style="font-size: 20px;">📅 Schedule for <b>${clickedDate}</b></span>`,
+    html: `
+      <div style="text-align:left; padding:5px;">
+        <div style="
+          background:#fafafa;
+          padding:10px 14px;
+          margin-bottom:8px;
+          border-radius:10px;
+          border-left:5px solid #df7a8a;
+          box-shadow: rgba(0,0,0,0.15) 0px 3px 6px;
+        ">
+          <div style="
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            gap:10px;
+          ">
+            <div style="font-weight:700; color:#333;">
+              🎉 ${name}
+            </div>
+            <div style="
+              font-size:12px;
+              font-weight:700;
+              color:#df7a8a;
+              background:rgba(223,122,138,0.12);
+              padding:4px 10px;
+              border-radius:999px;
+              white-space:nowrap;
+            ">
+              HOLIDAY
+            </div>
+          </div>
+
+          <div style="margin-top:6px; font-size:12px; color:#64748b; font-weight:600;">
+            Leave filing is blocked on this day.
+          </div>
+        </div>
+      </div>
+    `,
+    width: 480,
+    background: "#ffffff",
+    confirmButtonText: "Close",
+    confirmButtonColor: "#4a90e2",
+  });
+
+  return;
+}
+
+
       const eventsForDay = this.leaveEvents.filter(ev => {
         const eventDate = ev.date instanceof Date
           ? ev.date.toLocaleDateString('en-CA')
@@ -423,38 +481,38 @@ export default {
 
 
         return `
-  <div style="
-    background:#fafafa;
-    padding:10px 14px;
-    margin-bottom:8px;
-    border-radius:10px;
-    border-left:5px solid ${color};
-    box-shadow: rgba(0,0,0,0.15) 0px 3px 6px;
-  ">
-    <div style="
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      gap:10px;
-    ">
-      <div style="font-weight:600; color:#333;">
-        ${ev.title}
-      </div>
+                <div style="
+                  background:#fafafa;
+                  padding:10px 14px;
+                  margin-bottom:8px;
+                  border-radius:10px;
+                  border-left:5px solid ${color};
+                  box-shadow: rgba(0,0,0,0.15) 0px 3px 6px;
+                ">
+                  <div style="
+                    display:flex;
+                    justify-content:space-between;
+                    align-items:center;
+                    gap:10px;
+                  ">
+                    <div style="font-weight:600; color:#333;">
+                      ${ev.title}
+                    </div>
 
-      ${ev.extendedProps?.isHalfDay
-            ? `<div style="
-                font-size:13px;
-                font-weight:600;
-                color:#d62828;
-                white-space:nowrap;
-              ">
-                Half Day – ${ev.extendedProps.halfDayType}
-             </div>`
-            : ""
-          }
-    </div>
-  </div>
-`;
+                    ${ev.extendedProps?.isHalfDay
+                          ? `<div style="
+                              font-size:13px;
+                              font-weight:600;
+                              color:#d62828;
+                              white-space:nowrap;
+                            ">
+                              Half Day – ${ev.extendedProps.halfDayType}
+                          </div>`
+                          : ""
+                        }
+                  </div>
+                </div>
+              `;
 
       })
         .join("");
@@ -555,26 +613,119 @@ export default {
     },
 
 
+    // fetchLeaveEvents() {
+    //   fetch(`${API_BASE}/date_calendar`, {
+    //     method: "POST",
+    //     headers: { "Content-Type": "application/json" },
+    //     body: JSON.stringify({
+    //       dept_code: this.user.dept_code,
+    //     }),
+    //   })
+    //     .then(res => res.json())
+    //     .then(data => {
+    //       if (!data.success) {
+    //         console.error("Error fetching combined calendar:", data.error);
+    //         return;
+    //       }
+
+
+    //       let events = [];
+    //       // LEAVES
+    //       (data.dateall || []).forEach(item => {
+
+    //         const start = new Date(item.leave_from);
+    //         const end = new Date(item.leave_to);
+
+    //         start.setHours(0, 0, 0, 0);
+    //         end.setHours(0, 0, 0, 0);
+
+    //         let current = new Date(start);
+
+    //         const colorClass = leave_type_Colors[item.leave_type] || "badge default-class";
+    //         const statusLetter = this.getStatusLetter(item.status);
+    //         const firstName = item.user?.split(" ")[0] || "User";
+
+    //         while (current <= end) {
+
+    //           if (["SL", "VL", "EL"].includes(item.leave_type) && this.isWeekend(current)) {
+    //             current.setDate(current.getDate() + 1);
+    //             continue;
+    //           }
+    //           const isHalfDay =
+    //             !!item.isHalfday &&
+    //             current.getTime() === start.getTime();
+
+    //           events.push({
+    //             title: `${item.leave_type} - ${firstName} <b>${statusLetter}</b>`,
+    //             date: new Date(current),
+    //             classNames: [colorClass],
+    //             extendedProps: {
+    //               isHalfDay,
+    //               halfDayType: isHalfDay ? item.isHalfday : null
+    //             }
+    //           });
+
+    //           current.setDate(current.getDate() + 1);
+    //         }
+
+    //       });
+
+
+
+    //       // OB/OT
+    //       (data.otoball || []).forEach(item => {
+    //         const start = new Date(item.req_from);
+    //         const end = new Date(item.req_to);
+
+    //         const colorClass = ob_ot_Colors[item.type] || "badge default-class";
+    //         const statusLetter = this.getStatusLetter(item.status);
+    //         const firstName = item.fullName?.split(" ")[0] || "User";
+
+    //         let current = new Date(start);
+
+    //         while (current <= end) {
+    //           events.push({
+    //             title: `${item.type} - ${firstName} <b>${statusLetter}</b>`,
+    //             date: new Date(current),
+    //             classNames: [colorClass],
+    //           });
+
+    //           current.setDate(current.getDate() + 1);
+    //         }
+    //       });
+
+    //       this.leaveEvents = events;
+    //     })
+    //     .catch(err => {
+    //       console.error("Error fetching calendar events:", err);
+    //     });
+    // },
+
+
     fetchLeaveEvents() {
       fetch(`${API_BASE}/date_calendar`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          dept_code: this.user.dept_code,
-        }),
+        body: JSON.stringify({ dept_code: this.user.dept_code }),
       })
         .then(res => res.json())
         .then(data => {
-          if (!data.success) {
-            console.error("Error fetching combined calendar:", data.error);
-            return;
-          }
+          if (!data.success) return;
 
+          // store holidays
+          this.holidaysRaw = data.holidays || [];
+          this.holidaySet = new Set(this.holidaysRaw.map(h => String(h.holiday_date).trim())); // MM-DD
+
+          // build holiday events based on current calendar view range
+          const calApi = this.$refs.calendar?.getApi?.();
+          const viewStart = calApi?.view?.currentStart || new Date();
+          const viewEnd = calApi?.view?.currentEnd || new Date();
+          this.buildHolidayEventsForRange(viewStart, viewEnd);
 
           let events = [];
+
           // LEAVES
           (data.dateall || []).forEach(item => {
-
             const start = new Date(item.leave_from);
             const end = new Date(item.leave_to);
 
@@ -589,13 +740,19 @@ export default {
 
             while (current <= end) {
 
+              // ✅ ==skip weekend (same as you do)
               if (["SL", "VL", "EL"].includes(item.leave_type) && this.isWeekend(current)) {
                 current.setDate(current.getDate() + 1);
                 continue;
               }
-              const isHalfDay =
-                !!item.isHalfday &&
-                current.getTime() === start.getTime();
+
+              // ✅ skip holiday date (THIS is your request)
+              if (this.isHolidayDateObj(current)) {
+                current.setDate(current.getDate() + 1);
+                continue;
+              }
+
+              const isHalfDay = !!item.isHalfday && current.getTime() === start.getTime();
 
               events.push({
                 title: `${item.leave_type} - ${firstName} <b>${statusLetter}</b>`,
@@ -609,23 +766,24 @@ export default {
 
               current.setDate(current.getDate() + 1);
             }
-
           });
 
-
-
-          // OB/OT
+          // OB/OT (usually not affected by holiday rule, but if you want skip holiday too, add same check)
           (data.otoball || []).forEach(item => {
             const start = new Date(item.req_from);
             const end = new Date(item.req_to);
+
+            let current = new Date(start);
 
             const colorClass = ob_ot_Colors[item.type] || "badge default-class";
             const statusLetter = this.getStatusLetter(item.status);
             const firstName = item.fullName?.split(" ")[0] || "User";
 
-            let current = new Date(start);
-
             while (current <= end) {
+
+              // OPTIONAL: if you want OB/OT to skip holidays too:
+              // if (this.isHolidayDateObj(current)) { current.setDate(current.getDate() + 1); continue; }
+
               events.push({
                 title: `${item.type} - ${firstName} <b>${statusLetter}</b>`,
                 date: new Date(current),
@@ -636,17 +794,87 @@ export default {
             }
           });
 
-          this.leaveEvents = events;
+          //  merge holidays + events
+          this.mergeCalendarEvents(events);
         })
-        .catch(err => {
-          console.error("Error fetching calendar events:", err);
+        .catch(err => console.error(err));
+    },
+
+    isHolidayYMD(ymd) {
+      // ymd = "YYYY-MM-DD"
+      const parts = String(ymd).split("-");
+      if (parts.length !== 3) return false;
+      const mmdd = `${parts[1]}-${parts[2]}`;
+      return this.holidaySet.has(mmdd);
+    },
+
+    getHolidayNameByYMD(ymd) {
+      const parts = String(ymd).split("-");
+      if (parts.length !== 3) return null;
+      const mmdd = `${parts[1]}-${parts[2]}`;
+
+      const h = (this.holidaysRaw || []).find(x => String(x.holiday_date).trim() === mmdd);
+      return h ? h.holiday_name : null;
+    },
+
+
+
+    mmddFromDateObj(d) {
+      const mm = String(d.getMonth() + 1).padStart(2, "0");
+      const dd = String(d.getDate()).padStart(2, "0");
+      return `${mm}-${dd}`;
+    },
+
+    isHolidayDateObj(d) {
+      return this.holidaySet.has(this.mmddFromDateObj(d));
+    },
+
+    buildHolidayEventsForRange(start, end) {
+      // FullCalendar gives Date objects; range can cross years (Dec->Jan)
+      const years = new Set([start.getFullYear(), end.getFullYear()]);
+      const events = [];
+
+      years.forEach((year) => {
+        (this.holidaysRaw || []).forEach((h) => {
+          // h.holiday_date = "MM-DD"
+          const [mm, dd] = String(h.holiday_date).split("-");
+          if (!mm || !dd) return;
+
+          const ymd = `${year}-${mm.padStart(2, "0")}-${dd.padStart(2, "0")}`;
+
+          events.push({
+            title: `HOLIDAY`,
+            date: ymd,
+            allDay: true,
+            classNames: ["holiday-event"],
+            extendedProps: { isHoliday: true }
+          });
         });
-    }
+      });
+
+      this.holidayEvents = events;
+    },
+
+    mergeCalendarEvents(coreEvents) {
+      // holidays + leaves/otob
+      this.leaveEvents = [...this.holidayEvents, ...coreEvents];
+      this.calendarOptions.events = this.leaveEvents;
+    },
+
+    onDatesSet(info) {
+      // re-generate holiday events for whatever month/year the user is viewing
+      this.buildHolidayEventsForRange(info.start, info.end);
+
+      // re-merge with existing leaves/otob (without refetch)
+      const core = (this.leaveEvents || []).filter(ev => !ev.extendedProps?.isHoliday);
+      this.mergeCalendarEvents(core);
+    },
 
 
 
+  },
 
-  }
+
 }
 </script>
 
@@ -721,5 +949,19 @@ p {
 .row {
   display: flex;
   flex-wrap: wrap;
+}
+
+/* Holiday event style */
+:deep(.holiday-event) {
+  background: #d8572a !important;
+  border: 1px solid #ffb3b3 !important;
+  color: #d10000 !important;
+  font-weight: 700 !important;
+}
+
+/* optional: make it look like a highlight */
+:deep(.fc-daygrid-event.holiday-event) {
+  border-radius: 8px;
+  padding: 2px 6px;
 }
 </style>

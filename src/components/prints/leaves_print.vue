@@ -146,7 +146,8 @@
             <div class="grid-2">
                 <div class="field MT-3">
                     <label>Last Approved Leave Taken</label>
-                    <div class="value">{{ formatDate2(lastApprovedLeaveTaken)  }}</div>
+                    <div class="value">{{ lastApprovedLeaveTaken || '-'}}</div>
+                    <!-- <div class="value">{{ formatDate2(lastApprovedLeaveTaken)  }}</div> -->
                     <!-- <small style="display:block;margin-top:6px;color:#6b7280;">
                         Based on the most recent approved leave (same leave type) that already ended.
                     </small> -->

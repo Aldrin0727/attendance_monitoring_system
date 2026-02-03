@@ -181,8 +181,9 @@
                             <div class="row">
                                 <div class="col-6">
                                     <label class="form-label label-sm">Last Approved Leave Taken</label>
-                                    <input type="text" class="form-control" :value="toYMD(this.lastApprovedLeaveTaken)"
-                                        readonly />
+                                    <!-- <input type="text" class="form-control" :value="toYMD(lastApprovedLeaveTaken)"
+                                        readonly /> -->
+                                    <input type="text" class="form-control" :value="lastApprovedLeaveTaken || '-'" readonly />
                                     <!-- <small style="color:#6b7280;font-size:12px;display:block;margin-top:4px;">
                                         Based on the latest approved leave.
                                     </small> -->
@@ -302,6 +303,7 @@ export default {
             approving: false,
             denying: false,
             lastApprovedLeaveTaken: null, 
+            
         }
     },
 
@@ -452,6 +454,7 @@ export default {
             const ref_no = this.leaveRequest?.ref_no;
             if (!empId) return;
 
+
             fetch(`${API_BASE}/get_leaves_for_approval_request_date`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -463,10 +466,14 @@ export default {
             })
                 .then(res => res.json())
                 .then(data => {
+                    
+                   console.log(data)
                     if (!data.success) throw new Error(data.error || "Fetch failed");
 
                     this.existingLeaves = data.alldates || [];
-                    this.lastApprovedLeaveTaken = data.last_taken || null; // ✅ from backend
+                    this.lastApprovedLeaveTaken = data.last_taken || null; //  from backend
+
+                    console.log(data.last_taken)
                     
                 })
                 .catch(() => {
@@ -593,66 +600,66 @@ export default {
             this.$emit("close");
         },
 
-        async approveLeaveRequest() {
-            if (!this.canApprove || this.approving) return;
+approveLeaveRequest() {
+  if (!this.canApprove || this.approving) return;
 
-            this.approving = true;
+  this.approving = true;
 
-            await this.$nextTick();
-            await new Promise(r => setTimeout(r, 0));
+  const fd = new FormData();
+  fd.append("args", "APPROVED");
+  fd.append("ref_no", this.leaveRequest.ref_no);
+  fd.append("user", `${this.user.first_name} ${this.user.last_name}`);
+  fd.append("emp_id", this.leaveRequest.emp_id);
 
-            try {
-                // STEP 1: APPROVE
-                const fd = new FormData();
-                fd.append("args", "APPROVED");
-                fd.append("ref_no", this.leaveRequest.ref_no);
-                fd.append("user", `${this.user.first_name} ${this.user.last_name}`);
-                fd.append("emp_id", this.leaveRequest.emp_id);
+  // STEP 1: approve only (backend recompute + update DB)
+  fetch(`${API_BASE}/approved_deny_leaves`, { method: "POST", body: fd })
+    .then(res => res.json())
+    .then(data1 => {
+      if (!data1.success) throw new Error(data1.error || "Approval failed");
 
-                const res1 = await fetch(`${API_BASE}/approved_deny_leaves`, { method: "POST", body: fd });
-                const data1 = await res1.json();
-                if (!res1.ok || !data1.success) throw new Error(data1.error || "Approval failed");
+      // ✅ IMPORTANT: update local leaveRequest with DB-updated values
+      if (data1.updated) {
+        Object.assign(this.leaveRequest, data1.updated);
+      } else {
+        // fallback
+        this.leaveRequest.status = "APPROVED";
+      }
 
-                this.leaveRequest.status = "APPROVED";
+      // STEP 2: generate PDF based on UPDATED leaveRequest
+      return this.generateLeavePdfBlob();
+    })
+    .then(pdfBlob => {
+      // STEP 3: send email with pdf
+      const fd2 = new FormData();
+      fd2.append("args", "APPROVED");
+      fd2.append("ref_no", this.leaveRequest.ref_no);
+      fd2.append("user", `${this.user.first_name} ${this.user.last_name}`);
+      fd2.append("emp_id", this.leaveRequest.emp_id);
+      fd2.append("pdf", pdfBlob, `${this.leaveRequest.ref_no}.pdf`);
 
-                // STEP 2: GENERATE PDF
-                const pdfBlob = await this.generateLeavePdfBlob();
+      return fetch(`${API_BASE}/approved_deny_leaves`, { method: "POST", body: fd2 });
+    })
+    .then(res2 => res2.json())
+    .then(data2 => {
+      if (!data2.success) throw new Error(data2.error || "Email sending failed");
 
-                // STEP 3: SEND EMAIL
-                const fd2 = new FormData();
-                fd2.append("args", "APPROVED");
-                fd2.append("ref_no", this.leaveRequest.ref_no);
-                fd2.append("user", `${this.user.first_name} ${this.user.last_name}`);
-                fd2.append("emp_id", this.leaveRequest.emp_id);
-                fd2.append("pdf", pdfBlob, `${this.leaveRequest.ref_no}.pdf`);
-
-                const res2 = await fetch(`${API_BASE}/approved_deny_leaves`, { method: "POST", body: fd2 });
-                const data2 = await res2.json();
-                if (!res2.ok || !data2.success) throw new Error(data2.error || "Email sending failed");
-
-                // stop button loading FIRST (button-only loading)
-                this.approving = false;
-
-                await Swal.fire({
-                    icon: "success",
-                    title: "Leave approved successfully.",
-                    html: "<b>Email sent to HR.</b>",
-                    confirmButtonColor: "#28a745"
-                });
-
-                this.$emit("updateDataTable");
-                // this.closeModal();
-
-            } catch (err) {
-           
-                this.approving = false;
-
-                Swal.fire("Error", err?.message || "Something went wrong", "error");
-            }
-        }
-
-        ,
-
+      return Swal.fire({
+        icon: "success",
+        title: "Leave approved successfully.",
+        html: "<b>Email sent to HR.</b>",
+        confirmButtonColor: "#28a745"
+      });
+    })
+    .then(() => {
+      this.$emit("updateDataTable");
+    })
+    .catch(err => {
+      Swal.fire("Error", err.message || "Something went wrong", "error");
+    })
+    .finally(() => {
+      this.approving = false;
+    });
+},
 
 
         denyLeaveRequest() {
@@ -922,7 +929,7 @@ export default {
         canApprove() {
             if (!this.leaveRequest) return false;
 
-            if (this.leaveRequest.leave_type == 'SL') return true;
+            if (this.leaveRequest.leave_type == 'SL' || this.leaveRequest.leave_type == 'EL') return true;
 
             if (this.leaveRequest.status !== "FOR DEPARTMENT HEAD APPROVAL") {
                 return false;
