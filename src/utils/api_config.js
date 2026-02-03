@@ -4,7 +4,8 @@
 // const API_BASE = process.env.VUE_APP_API_BASE_URL || "http://192.168.0.101:5000";
 
 // // for local
-const API_BASE = process.env.VUE_APP_API_BASE_URL || process.env.VUE_APP_API_BASE_URL_1;
+const API_BASE = process.env.VUE_APP_API_BASE_URL_SERVER;
+// const API_BASE = process.env.VUE_APP_API_BASE_URL || process.env.VUE_APP_API_BASE_URL_1 || process.env.VUE_APP_API_BASE_URL_SERVER;
 
 // let API_BASE;
 

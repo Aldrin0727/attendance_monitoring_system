@@ -65,7 +65,14 @@ def not_found(error):
     app.logger.warning(f"Not Found: {error}")
     return jsonify({"error": "Not Found"}), 404
 
+# if __name__ == '__main__':
+#     app.secret_key = os.getenv('SECRET_KEY', 'P@$$w0rD!!!')
+#     app.config['SESSION_TYPE'] = 'filesystem'
+#     app.run(host='0.0.0.0', port=5000, debug=True)
+
 if __name__ == '__main__':
-    app.secret_key = os.getenv('SECRET_KEY', 'P@$$w0rD!!!')
-    app.config['SESSION_TYPE'] = 'filesystem'
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(
+        host=os.getenv("FLASK_HOST", "127.0.0.1"),
+        port=int(os.getenv("FLASK_PORT", 5001)),
+        debug=os.getenv("FLASK_DEBUG", "false").lower() == "true"
+    )
