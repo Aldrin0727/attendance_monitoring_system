@@ -114,7 +114,7 @@ def send_leave_for_approval_email(
 
 def send_vl_leave_request_email(
     mail, user, ref_no, position, dept, leave_number,
-    leave_from, leave_to, reason, email, leave_type,
+    leave_from, leave_to, reason, email, leave_type,depthead_emails,
     pdf_file=None
 ):
     header_bg_map = {
@@ -127,10 +127,18 @@ def send_vl_leave_request_email(
     header_bg = header_bg_map.get(leave_type, "#ffffff")  # fallback if unknown
     header_text = "#111827"  # readable for all above colors
 
+    #RECEPIENT
+    cc_emails = [
+        "bernard.belleza@jewelmer.com" # as hr
+    ]
+
+    if email:
+        cc_emails.append(email)
+
     msg = Message(
         subject=f"Approved Leave Request [{ref_no}]",
-        recipients=["aldrin.canarejo@jewelmer.com"],
-        cc=["lani.tirao@jewelmer.com"],
+        recipients=depthead_emails,
+        cc=cc_emails,
         html=f"""
                 <div style="margin:0;padding:0;background:#f6f7fb;">
                 <div style="max-width:640px;margin:0 auto;padding:24px 14px;font-family:Arial,Helvetica,sans-serif;color:#1f2937;">

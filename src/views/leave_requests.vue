@@ -193,7 +193,7 @@ export default {
             })
                 .then(response => response.json())
                 .then(data => {
-                    // console.log(data)
+                    console.log(data)
                     // console.log(data.all_list.date_leave_from)
                     this.leaveRequests = data.all_list || [];
                     this.datatableKey++;  // Re-render the DataTable

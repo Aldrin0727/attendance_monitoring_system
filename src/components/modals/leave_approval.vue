@@ -410,6 +410,7 @@ export default {
                 fd.append("ref_no", this.leaveRequest.ref_no);
                 fd.append("user", `${this.user.first_name} ${this.user.last_name}`);
                 fd.append("emp_id", this.leaveRequest.emp_id);
+                fd.append("dept_code", this.user.dept_code);
 
 
                 fetch(`${API_BASE}/approved_deny_leaves`, {
@@ -610,6 +611,8 @@ approveLeaveRequest() {
   fd.append("ref_no", this.leaveRequest.ref_no);
   fd.append("user", `${this.user.first_name} ${this.user.last_name}`);
   fd.append("emp_id", this.leaveRequest.emp_id);
+  fd.append("dept_code", this.user.dept_code);
+//   alert(this.user.dept_code)
 
   // STEP 1: approve only (backend recompute + update DB)
   fetch(`${API_BASE}/approved_deny_leaves`, { method: "POST", body: fd })
@@ -636,6 +639,8 @@ approveLeaveRequest() {
       fd2.append("user", `${this.user.first_name} ${this.user.last_name}`);
       fd2.append("emp_id", this.leaveRequest.emp_id);
       fd2.append("pdf", pdfBlob, `${this.leaveRequest.ref_no}.pdf`);
+      fd.append("dept_code", this.user.dept_code);
+    //   alert(this.user.dept_code)
 
       return fetch(`${API_BASE}/approved_deny_leaves`, { method: "POST", body: fd2 });
     })
@@ -670,6 +675,7 @@ approveLeaveRequest() {
             fd.append("ref_no", this.leaveRequest.ref_no);
             fd.append("user", `${this.user.first_name} ${this.user.last_name}`);
             fd.append("emp_id", this.leaveRequest.emp_id);
+            fd.append("dept_code", this.user.dept_code);
 
             fetch(`${API_BASE}/approved_deny_leaves`, {
                 method: "POST",

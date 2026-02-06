@@ -304,37 +304,39 @@ def get_all_leave_details():
         
         if position == 'Department Head' and status == 'FOR DEPARTMENT HEAD APPROVAL':
             base_query = f"""
-                   SELECT *,
-                  CAST(DATE(Leave_Details.leave_from) AS CHAR) AS leave_from,
-    CAST(DATE(Leave_Details.leave_to) AS CHAR)   AS leave_to,
-                        (
-                            SELECT d.department
-                            FROM `{Config.MYSQL_DB2}`.departments d
-                            WHERE d.dept_code = Leave_Details.department
-                            LIMIT 1
-                        ) AS dept_code
-                    FROM Leave_Details
-                    LEFT JOIN `{Config.MYSQL_DB2}`.users
-                        ON Leave_Details.emp_id = ticketing_dev.users.emp_id
-                    WHERE Leave_Details.department = %s
-
-                    """
+                SELECT 
+                    Leave_Details.*,
+                    CAST(DATE(Leave_Details.leave_from) AS CHAR) AS leave_from,
+                    CAST(DATE(Leave_Details.leave_to) AS CHAR) AS leave_to,
+                    (SELECT d.department
+                    FROM `{Config.MYSQL_DB2}`.departments d
+                    WHERE d.dept_code = Leave_Details.department
+                    LIMIT 1) AS dept_code
+                FROM Leave_Details
+                WHERE Leave_Details.department = %s
+            """
             values = [department]
+
         else:          
             # base_query = """
             #     SELECT * from Leave_Details WHERE user = %s
             # """
+            emp_id = data.get("emp_id")
+
             base_query = f"""
-                   SELECT *,CAST(DATE(Leave_Details.leave_from) AS CHAR) AS leave_from,
-    CAST(DATE(Leave_Details.leave_to) AS CHAR)   AS leave_to,
-                    (SELECT `{Config.MYSQL_DB2}`.departments.department from Leave_Details LEFT JOIN `{Config.MYSQL_DB2}`.departments ON Leave_Details.department = dept_code
-                    where Leave_Details.department = "ITD" group by department) as dept_code
-                    FROM Leave_Details 
-                    LEFT JOIN `{Config.MYSQL_DB2}`.users
-                        ON user = CONCAT(first_name, ' ', last_name)
-                    WHERE Leave_Details.user = %s
-                    """
-            values = [username]
+                SELECT 
+                    Leave_Details.*,
+                    CAST(DATE(Leave_Details.leave_from) AS CHAR) AS leave_from,
+                    CAST(DATE(Leave_Details.leave_to) AS CHAR) AS leave_to,
+                    (SELECT d.department
+                    FROM `{Config.MYSQL_DB2}`.departments d
+                    WHERE d.dept_code = Leave_Details.department
+                    LIMIT 1) AS dept_code
+                FROM Leave_Details
+                WHERE Leave_Details.emp_id = %s
+            """
+            values = [emp_id]
+
 
         if status:
             base_query += " AND status = %s"
@@ -490,13 +492,14 @@ def update_approved__deny_leaves():
         username = request.form.get("user")
         emp_id = request.form.get("emp_id")
         pdf_file = request.files.get("pdf")
+        department = request.form.get("dept_code")
 
         max_leave = 15
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
 
         # ✅ get current status + leave_type + leave_number
         cursor.execute("""
-            SELECT status, leave_type, leave_number
+            SELECT status, leave_type, leave_number, department
             FROM Leave_Details
             WHERE ref_no = %s
             LIMIT 1
@@ -505,18 +508,48 @@ def update_approved__deny_leaves():
         current_status = cur.get("status")
         leave_type = cur.get("leave_type")
         used_count = cur.get("leave_number") or 0
+        leave_dept = (cur.get("department") or "")
+
+        email_query = f"""
+            SELECT email
+            FROM `{Config.MYSQL_DB2}`.`users`
+            WHERE job_title = 'Department Head'
+            AND department = %s
+            AND email IS NOT NULL
+            AND email <> ''
+        """
+
+        cursor.execute(email_query, (leave_dept,))
+        rows = cursor.fetchall()
+
+        depthead_emails = [r["email"] for r in rows if r.get("email")]
+
+        
 
         detail_qry = f"""
             SELECT *,
-            (SELECT `{Config.MYSQL_DB2}`.departments.department
-             FROM Leave_Details
-             LEFT JOIN `{Config.MYSQL_DB2}`.departments ON Leave_Details.department = dept_code
-             WHERE Leave_Details.department = "ITD" GROUP BY department) as dept_code
+                (SELECT d.department
+                 FROM `{Config.MYSQL_DB2}`.departments d
+                 WHERE d.dept_code = Leave_Details.department
+                 LIMIT 1
+                ) AS dept_code
             FROM Leave_Details
             LEFT JOIN `{Config.MYSQL_DB2}`.users
                 ON Leave_Details.emp_id = ticketing_dev.users.emp_id
             WHERE ref_no = %s
         """
+
+        department = (request.form.get("dept_code") or "").strip().upper()
+        print("dept_code:", repr(department))
+
+        cursor.execute("SELECT COUNT(*) as c FROM `{}`.`users`".format(Config.MYSQL_DB2))
+        print("users count:", cursor.fetchone())
+
+        cursor.execute(email_query, (department,))
+        rows = cursor.fetchall() or []
+        print("depthead rows:", rows)
+        print("depthead_emails:", [r.get("email") for r in rows])
+
 
         # ✅ if already approved, don't recompute/update/history again
         if args == "APPROVED" and current_status == "APPROVED":
@@ -535,6 +568,7 @@ def update_approved__deny_leaves():
                     all_list['leave_reason'],
                     all_list['email'],
                     all_list['leave_type'],
+                    depthead_emails=depthead_emails,
                     pdf_file=pdf_file
                 )
             cursor.close()
@@ -602,6 +636,7 @@ def update_approved__deny_leaves():
                     all_list['leave_reason'],
                     all_list['email'],
                     all_list['leave_type'],
+                    depthead_emails=depthead_emails,
                     pdf_file=pdf_file
                 )
 
