@@ -129,7 +129,7 @@ def send_vl_leave_request_email(
 
     #RECEPIENT
     cc_emails = [
-        "bernard.belleza@jewelmer.com" # as hr
+        "hrtimekeeping@ecofarmsys.com" # as hr
     ]
 
     if email:
