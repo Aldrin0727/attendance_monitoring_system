@@ -3,14 +3,14 @@
 
         <div class="modal-dialog">
             <div class="modal-content">
-                         <div v-if="approving" class="screen-loader" role="dialog" aria-modal="true">
+                <div v-if="approving" class="screen-loader" role="dialog" aria-modal="true">
                     <div class="loader-card">
                         <div class="spinner-border" aria-hidden="true"></div>
-                        <div class="loader-title">Processing approval</div>
-                        <div class="loader-subtitle">Please wait while we generate PDF & send the email.</div>
+                        <div class="loader-title">{{ loaderTitle }}</div>
+                        <div class="loader-subtitle">{{ loaderSubtitle }}</div>
                     </div>
-
                 </div>
+
 
                 <!-- HEADER -->
                 <div class="modal-header py-1">
@@ -59,64 +59,75 @@
                         </div>
                     </div>
 
-                    <!-- OB/OT DETAILS -->
-                    <div class="section mt-3">
-                        <div class="section-title">{{ ob_ot_Request.type }} Request</div>
-                        <hr class="mt-0">
+                  <!-- OB/OT DETAILS -->
+<div class="section mt-3">
+  <div class="section-title">{{ ob_ot_Request.type }} Request</div>
+  <hr class="mt-0">
 
-                        <div class="row mb-3">
-                            <div class="col-4">
-                                <label class="form-label label-sm">Reference Number</label>
-                                <input type="text" class="form-control" v-model="ob_ot_Request.ref_number" readonly />
-                            </div>
+  <!-- row 1 -->
+  <div class="row g-3 mb-3">
+    <div class="col-12 col-md-4">
+      <label class="form-label label-sm">Reference Number</label>
+      <input type="text" class="form-control" v-model="ob_ot_Request.ref_number" readonly />
+    </div>
 
-                            <div class="col-4">
-                                <label class="form-label label-sm">Type</label>
-                                <input type="text" class="form-control" v-model="ob_ot_Request.type" readonly />
-                            </div>
+    <div class="col-12 col-md-4">
+      <label class="form-label label-sm">Type</label>
+      <input type="text" class="form-control" v-model="ob_ot_Request.type" readonly />
+    </div>
 
-                            <div class="col-4">
-                                <label class="form-label label-sm">Category</label>
-                                <input type="text" class="form-control" v-model="ob_ot_Request.category" readonly />
-                            </div>
+    <div class="col-12 col-md-4">
+      <label class="form-label label-sm">Category</label>
+      <input type="text" class="form-control" v-model="ob_ot_Request.category" readonly />
+    </div>
+  </div>
 
+  <!-- row 2 -->
+  <div class="row g-3 mb-3">
+    <div class="col-12 col-md-4">
+      <label class="form-label label-sm">Destination</label>
+      <input type="text" class="form-control" v-model="ob_ot_Request.destination" readonly />
+    </div>
 
-                        </div>
+    <div class="col-12 col-md-4">
+      <label class="form-label label-sm">Requested Date From</label>
+      <input type="text" class="form-control" :value="formatDisplayDT(ob_ot_Request.req_from)" readonly />
+    </div>
 
-                        <div class="row mb-3">
-                            <div class="col-4">
-                                <label class="form-label label-sm">Destination</label>
-                                <input type="text" class="form-control" v-model="ob_ot_Request.destination" readonly />
-                            </div>
-                            <div class="col-4">
-                                <label class="form-label label-sm">Requested Date From</label>
-                                <input type="datetime-local" class="form-control"
-                                    :value="formatDateTime(ob_ot_Request.req_from)" readonly />
-                            </div>
+    <div class="col-12 col-md-4">
+      <label class="form-label label-sm">Requested Date To</label>
+      <input type="text" class="form-control" :value="formatDisplayDT(ob_ot_Request.req_to)" readonly />
+    </div>
+  </div>
 
-                            <div class="col-4">
-                                <label class="form-label label-sm">Requested Date To</label>
-                                <input type="datetime-local" class="form-control"
-                                    :value="formatDateTime(ob_ot_Request.req_to)" readonly />
-                            </div>
-                        </div>
+  <!-- row 3: shops chips full width -->
+  <div class="row g-3 mb-3" v-if="ob_ot_Request.destination === 'Shops' && shopList.length">
+    <div class="col-12">
+      <label class="form-label label-sm">Shop(s)</label>
+      <div class="chips-wrap">
+        <span class="chip" v-for="s in shopList" :key="s">{{ s }}</span>
+      </div>
+    </div>
+  </div>
 
-                        <div class="row">
-                            <div class="col-6">
-                                <label class="form-label label-sm">Reason</label>
-                                <textarea class="form-control" rows="2" v-model="ob_ot_Request.request_reason"
-                                    readonly></textarea>
-                            </div>
-                            <div class="col-6">
-                                <label class="form-label label-sm">Project</label>
-                                <textarea class="form-control" rows="2" v-model="ob_ot_Request.project"
-                                    readonly></textarea>
-                            </div>
-                        </div>
-                    </div>
+  <!-- row 4 -->
+  <div class="row g-3">
+    <div class="col-12 col-md-6">
+      <label class="form-label label-sm">Reason</label>
+      <textarea class="form-control" rows="2" v-model="ob_ot_Request.request_reason" readonly></textarea>
+    </div>
+
+    <div class="col-12 col-md-6">
+      <label class="form-label label-sm">Project</label>
+      <textarea class="form-control" rows="2" v-model="ob_ot_Request.project" readonly></textarea>
+    </div>
+  </div>
+</div>
+
 
                     <!-- ACTUAL OB/OT DATE INPUTS (Visible Only When Approved) -->
-                    <div class="section mt-3" v-if="['APPROVED', 'PRE-APPROVED', 'FOR FINAL APPROVAL'].includes(ob_ot_Request.status)">
+                    <div class="section mt-3"
+                        v-if="['APPROVED', 'PRE-APPROVED', 'FOR FINAL APPROVAL'].includes(ob_ot_Request.status)">
                         <div class="section-title">
                             Actual {{ ob_ot_Request.type }} Execution
                         </div>
@@ -142,7 +153,7 @@
                         </div>
                     </div>
 
-                    
+
 
 
 
@@ -181,24 +192,27 @@
                     </div>
 
                     <div v-if="canApprove">
-                        <button class="btn btn-secondary me-2" @click="approveRequest">Approve</button>
-                        <button class="btn btn-danger" @click="denyRequest">Deny</button>
+                        <button class="btn btn-secondary me-2" @click="approveRequest"
+                            :disabled="approving">Approve</button>
+                        <button class="btn btn-danger" @click="denyRequest" :disabled="approving">Deny</button>
                     </div>
 
 
-                    <button class="btn btn-secondary me-2" @click="finalApproval"
-                        v-if="canFinalApprove">Approve</button>
-                    <button class="btn btn-danger" @click="denyRequest" v-if="canFinalApprove">Deny</button>
+                    <button class="btn btn-secondary me-2" @click="finalApproval" v-if="canFinalApprove"
+                        :disabled="approving">Approve</button>
+                    <button class="btn btn-danger" @click="denyRequest" v-if="canFinalApprove"
+                        :disabled="approving">Deny</button>
 
                     <div v-if="ob_ot_Request.status === 'PRE-APPROVED'">
-                        <button class="btn btn-success me-2" @click="saveActualDates">
-                            Save Actual {{ ob_ot_Request.type }} Dates
+                        <button class="btn btn-success me-2" @click="saveActualDates" :disabled="approving">
+                            <span v-if="approving">Saving...</span>
+                            <span v-else>Save Actual {{ ob_ot_Request.type }} Dates</span>
                         </button>
                     </div>
 
                 </div>
 
-               
+
 
                 <ot_ob_print ref="pdfTemplate" :request="ob_ot_Request" v-show="showPdf" />
 
@@ -238,16 +252,24 @@ export default {
             total_time: "",
 
             approving: false,
+            loaderTitle: "Processing",
+            loaderSubtitle: "Please wait...",
+
         };
     },
 
     computed: {
+          shopList() {
+    const raw = this.ob_ot_Request?.shop_location || "";
+    return raw.split(",").map(s => s.trim()).filter(Boolean);
+  },
+
         isHrRecord() {
             return this.ob_ot_Request.status === 'APPROVED';
         },
-         isActualDateReadOnly() {
+        isActualDateReadOnly() {
             return this.ob_ot_Request.status === 'FOR FINAL APPROVAL';
-         },
+        },
         canApprove() {
             return (
                 this.user.job_title === "Department Head" &&
@@ -444,38 +466,38 @@ export default {
         // },
 
         async submitDecision(decision) {
-            // prevent double click
             if (this.approving) return;
+
             this.approving = true;
+            this.loaderTitle = "Processing approval";
+            this.loaderSubtitle = decision === "APPROVED"
+                ? "Please wait while we generate PDF & send the email."
+                : "Please wait while we update the request status.";
 
             try {
-                // For APPROVED only: generate pdf
                 let pdfBlob = null;
                 if (decision === "APPROVED") {
                     pdfBlob = await this.generateOBOTPdfBlob();
                 }
 
-                // Always use FormData
                 const fd = new FormData();
                 fd.append("args", decision);
                 fd.append("ref_number", this.ob_ot_Request.ref_number);
                 fd.append("user", `${this.user.first_name} ${this.user.last_name}`);
-                fd.append("emp_id", this.ob_ot_Request.emp_id);
+                // fd.append("emp_id", this.ob_ot_Request.emp_id);
+                fd.append("emp_id", this.user.emp_id);
 
-                // Attach PDF only when APPROVED
                 if (pdfBlob) {
                     fd.append("pdf", pdfBlob, `${this.ob_ot_Request.ref_number}.pdf`);
                 }
 
                 const res = await fetch(`${API_BASE}/update_approved_deny_otob`, {
                     method: "POST",
-                    body: fd, // ✅ no content-type header
+                    body: fd,
                 });
 
                 const data = await res.json();
                 if (!res.ok || !data.success) throw new Error(data.error || "Request failed");
-
-                this.approving = false;
 
                 await Swal.fire({
                     icon: "success",
@@ -488,10 +510,14 @@ export default {
                 this.closeModal();
 
             } catch (err) {
-                this.approving = false;
                 Swal.fire("Error", err?.message || "Something went wrong", "error");
+            } finally {
+                this.approving = false;
+                this.loaderTitle = "Processing";
+                this.loaderSubtitle = "Please wait...";
             }
         },
+
 
 
 
@@ -525,52 +551,78 @@ export default {
             return `${year}-${month}-${day}T${hours}:${minutes}`;
         },
 
-        saveActualDates() {
-            // Required validation
+        async saveActualDates() {
+            if (this.approving) return;
+
             if (!this.actualDates.actual_from || !this.actualDates.actual_to) {
                 Swal.fire("Missing Fields", "Please provide both Actual Start and Actual End.", "warning");
                 return;
             }
 
-            const payload = {
-                ref_number: this.ob_ot_Request.ref_number,
-                actual_from: this.formatDateTime(this.actualDates.actual_from),
-                actual_to: this.formatDateTime(this.actualDates.actual_to),
-                actual_hours: this.total_time,
-                user: `${this.user.first_name} ${this.user.last_name}`
-            };
+            this.approving = true;
+            this.loaderTitle = "Saving actual dates";
+            this.loaderSubtitle = "Please wait while we save actual dates & notify your Department Head.";
 
-            // console.log(payload)
-            fetch(`${API_BASE}/update_actual_date`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload)
-            })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.success) {
+            try {
+                const payload = {
+                    ref_number: this.ob_ot_Request.ref_number,
+                    actual_from: this.formatDateTime(this.actualDates.actual_from),
+                    actual_to: this.formatDateTime(this.actualDates.actual_to),
+                    actual_hours: this.total_time,
+                    user: `${this.user.first_name} ${this.user.last_name}`
+                };
 
-                        Swal.fire({
-                            icon: "success",
-                            title: `${this.ob_ot_Request.type} Actual Dates Saved`,
-                            text: `Total Time: ${this.total_time}`,
-                        });
-
-                        // refresh parent table
-                        this.$emit("updateDataTable");
-
-                        // close modal
-                        this.closeModal();
-
-                    } else {
-                        Swal.fire("Error", data.error || "Failed to save actual dates.", "error");
-                    }
-                })
-                .catch(err => {
-                    console.error(err);
-                    Swal.fire("Error", "Something went wrong while saving.", "error");
+                const res = await fetch(`${API_BASE}/update_actual_date`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
                 });
-        }
+
+                const data = await res.json();
+                if (!res.ok || !data.success) throw new Error(data.error || "Failed to save actual dates.");
+
+                await Swal.fire({
+                    icon: "success",
+                    title: `${this.ob_ot_Request.type} Actual Dates Saved`,
+                    text: `Total Time: ${this.total_time}`,
+                    confirmButtonColor: "#28a745",
+                });
+
+                this.$emit("updateDataTable");
+                this.closeModal();
+
+            } catch (err) {
+                Swal.fire("Error", err?.message || "Something went wrong while saving.", "error");
+            } finally {
+                this.approving = false;
+                this.loaderTitle = "Processing";
+                this.loaderSubtitle = "Please wait...";
+            }
+        },
+
+        formatDisplayDT(dt) {
+    if (!dt) return "";
+    const d = new Date(dt);
+    if (isNaN(d.getTime())) return String(dt);
+
+    // output: MM/DD/YYYY hh:mm AM/PM
+    return d.toLocaleString("en-US", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true
+    });
+  },
+
+  // for API payload saving actual dates (datetime-local -> ISO-ish)
+  toBackendDT(dtLocal) {
+    if (!dtLocal) return null;
+    const d = new Date(dtLocal);
+    return d.toISOString().slice(0, 19).replace("T", " "); // yyyy-mm-dd HH:MM:SS
+  },
+
 
     }
 };
@@ -616,42 +668,66 @@ textarea {
     z-index: -1;
 }
 
-.screen-loader{
-  position: fixed;
-  inset: 0;
-  background: rgba(15, 23, 42, 0.45); /* dark overlay */
-  backdrop-filter: blur(4px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 9999;
-  padding: 16px;
+.screen-loader {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.45);
+    /* dark overlay */
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    padding: 16px;
 }
 
-.loader-card{
-  width: min(360px, 100%);
-  background: #fff;
-  border-radius: 16px;
-  padding: 18px 20px;
-  box-shadow: 0 20px 60px rgba(0,0,0,.18);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
+.loader-card {
+    width: min(360px, 100%);
+    background: #fff;
+    border-radius: 16px;
+    padding: 18px 20px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, .18);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
 }
 
-.loader-title{
-  margin-top: 12px;
-  font-weight: 700;
-  font-size: 16px;
-  color: #2b6777;
+.loader-title {
+    margin-top: 12px;
+    font-weight: 700;
+    font-size: 16px;
+    color: #2b6777;
 }
 
-.loader-subtitle{
-  margin-top: 6px;
-  font-size: 13px;
-  color: #475569;
-  line-height: 1.4;
+.loader-subtitle {
+    margin-top: 6px;
+    font-size: 13px;
+    color: #475569;
+    line-height: 1.4;
 }
 
+.chips-wrap {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 10px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    min-height: 42px;
+}
+
+.chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px;
+    border-radius: 999px;
+    border: 1px solid rgba(43, 103, 119, .25);
+    background: rgba(90, 197, 197, .12);
+    color: #2b6777;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .2px;
+}
 </style>

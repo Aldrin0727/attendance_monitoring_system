@@ -134,7 +134,7 @@ export default {
                 searching: true,
                 ordering: true,
                 responsive: true,
-                order: [[4, "desc"]], // sort by date_from
+                order: [[0, "desc"]], // sort by date_from
             }
         };
     },

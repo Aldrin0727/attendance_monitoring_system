@@ -499,12 +499,23 @@ def update_approved__deny_leaves():
 
         # ✅ get current status + leave_type + leave_number
         cursor.execute("""
-            SELECT status, leave_type, leave_number, department
+            SELECT status, leave_type, leave_number, department, emp_id
             FROM Leave_Details
             WHERE ref_no = %s
             LIMIT 1
         """, (ref_no,))
         cur = cursor.fetchone() or {}
+        requester_emp_id = cur.get("emp_id")
+
+        # ✅ Block self-approval
+        if requester_emp_id and emp_id and str(requester_emp_id) == str(emp_id):
+            cursor.close()
+            return jsonify({
+                "success": False,
+                "error": "Self-approval is not allowed. Another Department Head must approve this request."
+            }), 403
+
+
         current_status = cur.get("status")
         leave_type = cur.get("leave_type")
         used_count = cur.get("leave_number") or 0

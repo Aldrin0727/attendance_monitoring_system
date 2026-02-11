@@ -142,7 +142,7 @@ export default {
                 searching: true,
                 ordering: true,
                 responsive: true,
-                order: [[7, 'desc']],
+                order: [[0, 'desc']],
             },
         };
     },

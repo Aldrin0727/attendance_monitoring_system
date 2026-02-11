@@ -32,7 +32,20 @@
                         </a>
                     </li>
 
-                    <li :class="{ active: isActive('parameters') }">
+                    <!-- <li :class="{ active: isActive('parameters') }">
+                        <a @click.prevent="toggleDropdown('parameters')">
+                            <i class="fas fa-sliders"></i>
+                            <span v-show="!isSidebarActive">Parameters</span>
+                            <i class="fas fa-chevron-down dropdown-icon" :class="{ open: dropdowns.parameters }"></i>
+                        </a>
+
+                        <ul v-show="dropdowns.parameters" class="submenu">
+                            <li :class="{ active: isActive('holidays') }" @click="navigate('holidays')">
+                                Holidays
+                            </li>
+                        </ul>
+                   </li> -->
+                    <li v-if="user?.job_title === 'Department Head'" :class="{ active: isActive('parameters') }">
                         <a @click.prevent="toggleDropdown('parameters')">
                             <i class="fas fa-sliders"></i>
                             <span v-show="!isSidebarActive">Parameters</span>
@@ -45,6 +58,8 @@
                             </li>
                         </ul>
                     </li>
+
+
 
                     <li :class="{ active: isActive('attendance') }">
                         <a @click.prevent="navigate('attendance')">
@@ -137,6 +152,7 @@ export default {
             this.user = {
                 fullName: `${u.first_name} ${u.last_name}`,
                 dept_code: u.dept_code,
+                    job_title: u.job_title, 
             };
         }
     },
