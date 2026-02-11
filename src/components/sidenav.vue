@@ -68,14 +68,32 @@
                         </a>
                     </li>
 
-                    <li :class="{ active: isActive('leave_requests') }">
+                    <!-- <li :class="{ active: isActive('leave_requests') }">
                         <a @click.prevent="navigate('leave_requests')">
                             <i class="fas fa-computer"></i>
                             <span v-show="!isSidebarActive">Leave Requests</span>
                         </a>
+                    </li> -->
+                    <li :class="{ active: isLeavesActive }">
+                        <a @click.prevent="toggleDropdown('leaves')">
+                            <i class="fas fa-calendar-check"></i>
+                            <span v-show="!isSidebarActive">Leave Requests</span>
+                            <i class="fas fa-chevron-down dropdown-icon" :class="{ open: dropdowns.leaves }"></i>
+                        </a>
+
+                        <ul v-show="dropdowns.leaves" class="submenu">
+                            <li :class="{ active: isActive('leave_requests') }">
+                                <a @click.prevent="navigate('leave_requests')">My Leaves</a>
+                            </li>
+
+                            <li v-if="user?.job_title === 'Department Head'"
+                                :class="{ active: isActive('all_leaves') }">
+                                <a @click.prevent="navigate('all_leaves')">All Leaves</a>
+                            </li>
+                        </ul>
                     </li>
 
-                    <li :class="{ active: isActive('ob_ot') }">
+                    <!-- <li :class="{ active: isActive('ob_ot') }">
                         <a @click.prevent="navigate('ob_ot')">
                             <i class="fas fa-window-restore"></i>
                             <span v-show="!isSidebarActive">OB/OT</span>
@@ -87,7 +105,27 @@
                             <i class="fas fa-chart-line"></i>
                             <span v-show="!isSidebarActive">Reports</span>
                         </a>
+                    </li> -->
+
+                  <li :class="{ active: isObOtActive }">
+                        <a @click.prevent="toggleDropdown('ob_ot')">
+                            <i class="fas fa-window-restore"></i>
+                            <span v-show="!isSidebarActive">OB/OT</span>
+                            <i class="fas fa-chevron-down dropdown-icon" :class="{ open: dropdowns.ob_ot }"></i>
+                        </a>
+
+                        <ul v-show="dropdowns.ob_ot" class="submenu">
+                            <li :class="{ active: isActive('ob_ot') }">
+                                <a @click.prevent="navigate('ob_ot')">My OB/OT</a>
+                            </li>
+
+                            <li v-if="user?.job_title === 'Department Head'" :class="{ active: isActive('all_ob_ot') }">
+                                <a @click.prevent="navigate('all_ob_ot')">All OB/OT</a>
+                            </li>
+                        </ul>
                     </li>
+
+
                 </ul>
             </div>
 
@@ -120,11 +158,14 @@ export default {
             dropdowns: {
                 assignments: false,
                 parameters: false,
+                leaves: false,
+                ob_ot: false, 
             },
             user: getUserData() || {},
         };
     },
     computed: {
+      
         userInitials() {
             const u = this.user || {};
             let fullName = "";
@@ -146,6 +187,7 @@ export default {
         }
     },
     mounted() {
+        
         const stored = localStorage.getItem("user");
         if (stored) {
             const u = JSON.parse(stored);
@@ -155,17 +197,29 @@ export default {
                     job_title: u.job_title, 
             };
         }
+
+        
     },
+    
     methods: {
         navigate(view) {
-            let parametersSubmenus = ['holidays', 'user_list'];
-            
+            const parametersSubmenus = ["holidays", "user_list"];
+
+            // routes na hindi /parameters/*
+            const leaveSubmenus = ["leave_requests", "all_leaves"];
+            const ob_otSubmenus = ["all_ob_ot", "ob_ot"];
+
             if (parametersSubmenus.includes(view)) {
                 this.$router.push({ path: `/parameters/${view}` });
+            } else if (leaveSubmenus.includes(view)) {
+                this.$router.push({ path: `/${view}` });
+            } else if (ob_otSubmenus.includes(view)) {
+                this.$router.push({ path: `/${view}` });
             } else {
                 this.$router.push({ path: `/${view}` });
             }
         },
+
         isActive(view) {
             return (
                 this.$route.path === `/${view}` ||

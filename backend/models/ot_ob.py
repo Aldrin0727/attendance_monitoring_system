@@ -550,3 +550,79 @@ def get_otob_for_approval_request_date():
         return jsonify({"success": True,"alldates":alldates}), 201
     except Exception as e:
         return jsonify({"error": str(e)}),500
+
+@ot_ob_bp.route('/depthead_all_otob', methods=['POST'])
+def depthead_all_otob():
+    try:
+        data = request.get_json() or {}
+
+        dept_code = (data.get("dept_code") or "").strip()
+        status = (data.get("status") or "").strip()
+        req_type = (data.get("type") or "").strip()          # "OT" or "OB"
+        category = (data.get("category") or "").strip()
+
+        viewer_emp_id = (data.get("emp_id") or "").strip()   # optional but recommended
+
+        if not dept_code:
+            return jsonify({"success": False, "error": "dept_code is required"}), 400
+
+        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+
+        # ✅ verify Dept Head (using DB2 users)
+        if viewer_emp_id:
+            cursor.execute(f"""
+                SELECT job_title
+                FROM `{Config.MYSQL_DB2}`.users
+                WHERE emp_id = %s
+                LIMIT 1
+            """, (viewer_emp_id,))
+            u = cursor.fetchone() or {}
+            if u.get("job_title") != "Department Head":
+                cursor.close()
+                return jsonify({"success": False, "error": "Unauthorized"}), 403
+
+        base_query = f"""
+            SELECT
+              ot_ob.*,
+              u.email,
+              u.first_name,
+              u.last_name,
+              u.job_title,
+              u.contact,
+              u.address,
+              u.position,
+              (SELECT d.department
+                FROM `{Config.MYSQL_DB2}`.departments d
+                WHERE d.dept_code = ot_ob.department
+                LIMIT 1
+              ) AS dept_name
+            FROM ot_ob
+            LEFT JOIN `{Config.MYSQL_DB2}`.users u
+              ON ot_ob.emp_id = u.emp_id
+            WHERE ot_ob.department = %s
+        """
+        values = [dept_code]
+
+        # ✅ optional filters
+        if status:
+            base_query += " AND ot_ob.status = %s"
+            values.append(status)
+
+        if req_type:
+            base_query += " AND ot_ob.type = %s"
+            values.append(req_type)
+
+        if category:
+            base_query += " AND ot_ob.category = %s"
+            values.append(category)
+
+        base_query += " ORDER BY ot_ob.date_created DESC"
+
+        cursor.execute(base_query, tuple(values))
+        all_list = cursor.fetchall() or []
+
+        cursor.close()
+        return jsonify({"success": True, "all_list": all_list}), 200
+
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500

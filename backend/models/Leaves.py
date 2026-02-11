@@ -304,16 +304,24 @@ def get_all_leave_details():
         
         if position == 'Department Head' and status == 'FOR DEPARTMENT HEAD APPROVAL':
             base_query = f"""
-                SELECT 
-                    Leave_Details.*,
-                    CAST(DATE(Leave_Details.leave_from) AS CHAR) AS leave_from,
-                    CAST(DATE(Leave_Details.leave_to) AS CHAR) AS leave_to,
-                    (SELECT d.department
-                    FROM `{Config.MYSQL_DB2}`.departments d
-                    WHERE d.dept_code = Leave_Details.department
-                    LIMIT 1) AS dept_code
-                FROM Leave_Details
-                WHERE Leave_Details.department = %s
+                SELECT
+                    ld.*,
+                    u.first_name,
+                    u.last_name,
+                    u.position,
+                    u.email,
+                    u.address,
+                    u.contact,
+                    u.department AS emp_dept_code,
+                    d.department AS dept_name,
+                    DATE_FORMAT(ld.leave_from, '%%Y-%%m-%%d') AS leave_from,
+                    DATE_FORMAT(ld.leave_to, '%%Y-%%m-%%d') AS leave_to
+                FROM Leave_Details ld
+                LEFT JOIN `{Config.MYSQL_DB2}`.users u
+                    ON ld.emp_id = u.emp_id
+                LEFT JOIN `{Config.MYSQL_DB2}`.departments d
+                    ON ld.department = d.dept_code
+                WHERE ld.department = %s
             """
             values = [department]
 
@@ -324,16 +332,24 @@ def get_all_leave_details():
             emp_id = data.get("emp_id")
 
             base_query = f"""
-                SELECT 
-                    Leave_Details.*,
-                    CAST(DATE(Leave_Details.leave_from) AS CHAR) AS leave_from,
-                    CAST(DATE(Leave_Details.leave_to) AS CHAR) AS leave_to,
-                    (SELECT d.department
-                    FROM `{Config.MYSQL_DB2}`.departments d
-                    WHERE d.dept_code = Leave_Details.department
-                    LIMIT 1) AS dept_code
-                FROM Leave_Details
-                WHERE Leave_Details.emp_id = %s
+                SELECT
+                    ld.*,
+                    u.first_name,
+                    u.last_name,
+                    u.position,
+                    u.email,
+                    u.address,
+                    u.contact,
+                    u.department AS emp_dept_code,
+                    d.department AS dept_name,
+                    DATE_FORMAT(ld.leave_from, '%%Y-%%m-%%d') AS leave_from,
+                    DATE_FORMAT(ld.leave_to, '%%Y-%%m-%%d') AS leave_to
+                FROM Leave_Details ld
+                LEFT JOIN `{Config.MYSQL_DB2}`.users u
+                    ON ld.emp_id = u.emp_id
+                LEFT JOIN `{Config.MYSQL_DB2}`.departments d
+                    ON ld.department = d.dept_code
+                WHERE ld.emp_id = %s
             """
             values = [emp_id]
 
@@ -901,5 +917,41 @@ def get_remaining_leaves():
             }
         }), 200
 
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+@leave_bp.route('/depthead_all_leaves', methods=['POST'])
+def depthead_all_leaves():
+    try:
+        data = request.get_json() or {}
+        department = data.get("dept_code")
+
+        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor.execute(f"""
+            SELECT
+                ld.*,
+                u.first_name,
+                u.last_name,
+                u.position,
+                u.email,u.address,
+                u.contact,
+                d.department AS dept_name,
+                DATE_FORMAT(ld.leave_from, '%%Y-%%m-%%d') AS leave_from,
+                DATE_FORMAT(ld.leave_to, '%%Y-%%m-%%d') AS leave_to
+
+            FROM Leave_Details ld
+            LEFT JOIN `{Config.MYSQL_DB2}`.users u
+                ON ld.emp_id = u.emp_id
+            LEFT JOIN `{Config.MYSQL_DB2}`.departments d
+                ON ld.department = d.dept_code
+
+            WHERE ld.department = %s
+            ORDER BY ld.date_created DESC
+        """, (department,))
+
+        rows = cursor.fetchall()
+        cursor.close()
+
+        return jsonify({"success": True, "all_list": rows}), 200
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500

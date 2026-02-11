@@ -23,36 +23,45 @@ const routes = [
       job_title: route.query.job_title,
     }),
   },
-   {
+  {
     path: "/attendance",
     name: "Attendance",
     component: () => import("../views/attendance.vue"),
     meta: { requiresAuth: true },
   },
-   {
+  {
+    path: "/all_leaves",
+    name: "AllLeaves",
+    component: () => import("../views/all_leaves.vue"),
+    meta: { requiresAuth: true },
+  },
+  {
     path: "/parameters/holidays",
     name: "Holidays",
     component: () => import("../views/holidays.vue"),
     meta: { requiresAuth: true },
   },
-   {
+  {
     path: "/ob_ot",
     name: "OB_OT",
     component: () => import("../views/ob_ot.vue"),
     meta: { requiresAuth: true },
-     props: (route) => ({
+    props: (route) => ({
       status: route.query.status,
       job_title: route.query.job_title,
     }),
   },
-
-
+  {
+    path: "/all_ob_ot",
+    name: "AllObOt",
+    component: () => import("../views/all_ob_ot.vue"),
+    meta: { requiresAuth: true },
+  },
 ];
-
 
 const router = createRouter({
   history: createWebHistory(), // Palitan ito
-  routes
+  routes,
 });
 
 // Navigation Guard
@@ -65,5 +74,4 @@ router.beforeEach((to, from, next) => {
     next();
   }
 });
-export default router
-  
+export default router;
