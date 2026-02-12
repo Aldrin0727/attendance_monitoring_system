@@ -75,6 +75,16 @@
                 </div>
             </div>
 
+          <!-- SHOPS (only if destination is Shops) -->
+            <div class="mt-3" v-if="request.destination === 'Shops' && shopList.length">
+                <div class="field">
+                    <label>Shop(s)</label>
+                    <div class="chips-wrap">
+                        <span class="chip" v-for="s in shopList" :key="s">{{ s }}</span>
+                    </div>
+                </div>
+            </div>
+
             <div class="grid-2 mt-3">
                 <div class="field">
                     <label>Reason</label>
@@ -136,6 +146,12 @@ export default {
     props: {
         request: Object
     },
+     computed: {
+    shopList() {
+      const raw = this.request?.shop_location || "";
+      return raw.split(",").map(s => s.trim()).filter(Boolean);
+    }
+  },
     methods: {
         format(value) {
             if (!value) return '-';

@@ -409,7 +409,7 @@ export default {
                 fd.append("args", "CANCELLED");
                 fd.append("ref_no", this.leaveRequest.ref_no);
                 fd.append("user", `${this.user.first_name} ${this.user.last_name}`);
-                fd.append("emp_id", this.leaveRequest.emp_id);
+                fd.append("emp_id", this.user.emp_id);
                 fd.append("dept_code", this.user.dept_code);
 
 
@@ -606,12 +606,16 @@ approveLeaveRequest() {
 
   this.approving = true;
 
-  const fd = new FormData();
-  fd.append("args", "APPROVED");
-  fd.append("ref_no", this.leaveRequest.ref_no);
-  fd.append("user", `${this.user.first_name} ${this.user.last_name}`);
-  fd.append("emp_id", this.leaveRequest.emp_id);
-  fd.append("dept_code", this.user.dept_code);
+const fd = new FormData();
+fd.append("args", "APPROVED");
+fd.append("ref_no", this.leaveRequest.ref_no);
+fd.append("user", `${this.user.first_name} ${this.user.last_name}`);
+
+fd.append("requester_emp_id", this.leaveRequest.emp_id);
+fd.append("approver_emp_id", this.user.emp_id);
+
+fd.append("dept_code", this.user.dept_code);
+
 //   alert(this.user.dept_code)
 
   // STEP 1: approve only (backend recompute + update DB)
@@ -632,14 +636,18 @@ approveLeaveRequest() {
       return this.generateLeavePdfBlob();
     })
     .then(pdfBlob => {
-      // STEP 3: send email with pdf
+      // STEP 3: send email with pdf=
       const fd2 = new FormData();
-      fd2.append("args", "APPROVED");
-      fd2.append("ref_no", this.leaveRequest.ref_no);
-      fd2.append("user", `${this.user.first_name} ${this.user.last_name}`);
-      fd2.append("emp_id", this.leaveRequest.emp_id);
-      fd2.append("pdf", pdfBlob, `${this.leaveRequest.ref_no}.pdf`);
-      fd.append("dept_code", this.user.dept_code);
+        fd2.append("args", "APPROVED");
+        fd2.append("ref_no", this.leaveRequest.ref_no);
+        fd2.append("user", `${this.user.first_name} ${this.user.last_name}`);
+
+        fd2.append("requester_emp_id", this.leaveRequest.emp_id);
+        fd2.append("approver_emp_id", this.user.emp_id);
+
+        fd2.append("dept_code", this.user.dept_code);
+        fd2.append("pdf", pdfBlob, `${this.leaveRequest.ref_no}.pdf`);
+
     //   alert(this.user.dept_code)
 
       return fetch(`${API_BASE}/approved_deny_leaves`, { method: "POST", body: fd2 });

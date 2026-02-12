@@ -97,3 +97,24 @@
     color: #d62828;
     font-weight: 600;
 }
+
+.chips-wrap{
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-height: 42px;
+}
+.chip{
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(43, 103, 119, .25);
+  background: rgba(90, 197, 197, .12);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .2px;
+}

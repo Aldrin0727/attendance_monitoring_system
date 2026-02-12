@@ -59,70 +59,74 @@
                         </div>
                     </div>
 
-                  <!-- OB/OT DETAILS -->
-<div class="section mt-3">
-  <div class="section-title">{{ ob_ot_Request.type }} Request</div>
-  <hr class="mt-0">
+                    <!-- OB/OT DETAILS -->
+                    <div class="section mt-3">
+                        <div class="section-title">{{ ob_ot_Request.type }} Request</div>
+                        <hr class="mt-0">
 
-  <!-- row 1 -->
-  <div class="row g-3 mb-3">
-    <div class="col-12 col-md-4">
-      <label class="form-label label-sm">Reference Number</label>
-      <input type="text" class="form-control" v-model="ob_ot_Request.ref_number" readonly />
-    </div>
+                        <!-- row 1 -->
+                        <div class="row g-3 mb-3">
+                            <div class="col-12 col-md-4">
+                                <label class="form-label label-sm">Reference Number</label>
+                                <input type="text" class="form-control" v-model="ob_ot_Request.ref_number" readonly />
+                            </div>
 
-    <div class="col-12 col-md-4">
-      <label class="form-label label-sm">Type</label>
-      <input type="text" class="form-control" v-model="ob_ot_Request.type" readonly />
-    </div>
+                            <div class="col-12 col-md-4">
+                                <label class="form-label label-sm">Type</label>
+                                <input type="text" class="form-control" v-model="ob_ot_Request.type" readonly />
+                            </div>
 
-    <div class="col-12 col-md-4">
-      <label class="form-label label-sm">Category</label>
-      <input type="text" class="form-control" v-model="ob_ot_Request.category" readonly />
-    </div>
-  </div>
+                            <div class="col-12 col-md-4">
+                                <label class="form-label label-sm">Category</label>
+                                <input type="text" class="form-control" v-model="ob_ot_Request.category" readonly />
+                            </div>
+                        </div>
 
-  <!-- row 2 -->
-  <div class="row g-3 mb-3">
-    <div class="col-12 col-md-4">
-      <label class="form-label label-sm">Destination</label>
-      <input type="text" class="form-control" v-model="ob_ot_Request.destination" readonly />
-    </div>
+                        <!-- row 2 -->
+                        <div class="row g-3 mb-3">
+                            <div class="col-12 col-md-4">
+                                <label class="form-label label-sm">Destination</label>
+                                <input type="text" class="form-control" v-model="ob_ot_Request.destination" readonly />
+                            </div>
 
-    <div class="col-12 col-md-4">
-      <label class="form-label label-sm">Requested Date From</label>
-      <input type="text" class="form-control" :value="formatDisplayDT(ob_ot_Request.req_from)" readonly />
-    </div>
+                            <div class="col-12 col-md-4">
+                                <label class="form-label label-sm">Requested Date From</label>
+                                <input type="text" class="form-control" :value="formatDisplayDT(ob_ot_Request.req_from)"
+                                    readonly />
+                            </div>
 
-    <div class="col-12 col-md-4">
-      <label class="form-label label-sm">Requested Date To</label>
-      <input type="text" class="form-control" :value="formatDisplayDT(ob_ot_Request.req_to)" readonly />
-    </div>
-  </div>
+                            <div class="col-12 col-md-4">
+                                <label class="form-label label-sm">Requested Date To</label>
+                                <input type="text" class="form-control" :value="formatDisplayDT(ob_ot_Request.req_to)"
+                                    readonly />
+                            </div>
+                        </div>
 
-  <!-- row 3: shops chips full width -->
-  <div class="row g-3 mb-3" v-if="ob_ot_Request.destination === 'Shops' && shopList.length">
-    <div class="col-12">
-      <label class="form-label label-sm">Shop(s)</label>
-      <div class="chips-wrap">
-        <span class="chip" v-for="s in shopList" :key="s">{{ s }}</span>
-      </div>
-    </div>
-  </div>
+                        <!-- row 3: shops chips full width -->
+                        <div class="row g-3 mb-3" v-if="ob_ot_Request.destination === 'Shops' && shopList.length">
+                            <div class="col-12">
+                                <label class="form-label label-sm">Shop(s)</label>
+                                <div class="chips-wrap">
+                                    <span class="chip" v-for="s in shopList" :key="s">{{ s }}</span>
+                                </div>
+                            </div>
+                        </div>
 
-  <!-- row 4 -->
-  <div class="row g-3">
-    <div class="col-12 col-md-6">
-      <label class="form-label label-sm">Reason</label>
-      <textarea class="form-control" rows="2" v-model="ob_ot_Request.request_reason" readonly></textarea>
-    </div>
+                        <!-- row 4 -->
+                        <div class="row g-3">
+                            <div class="col-12 col-md-6">
+                                <label class="form-label label-sm">Reason</label>
+                                <textarea class="form-control" rows="2" v-model="ob_ot_Request.request_reason"
+                                    readonly></textarea>
+                            </div>
 
-    <div class="col-12 col-md-6">
-      <label class="form-label label-sm">Project</label>
-      <textarea class="form-control" rows="2" v-model="ob_ot_Request.project" readonly></textarea>
-    </div>
-  </div>
-</div>
+                            <div class="col-12 col-md-6">
+                                <label class="form-label label-sm">Project</label>
+                                <textarea class="form-control" rows="2" v-model="ob_ot_Request.project"
+                                    readonly></textarea>
+                            </div>
+                        </div>
+                    </div>
 
 
                     <!-- ACTUAL OB/OT DATE INPUTS (Visible Only When Approved) -->
@@ -137,13 +141,13 @@
                             <div class="col-5">
                                 <label class="form-label label-sm">Actual Start Date & Time</label>
                                 <input type="datetime-local" class="form-control" v-model="actualDates.actual_from"
-                                    :readonly="isHrRecord || isActualDateReadOnly" />
+                                    :readonly="isHrRecord || isActualDateReadOnly"  :disabled="!isRequester"/>
                             </div>
 
                             <div class="col-5">
                                 <label class="form-label label-sm">Actual End Date & Time</label>
                                 <input type="datetime-local" class="form-control" v-model="actualDates.actual_to"
-                                    :readonly="isHrRecord || isActualDateReadOnly" />
+                                    :readonly="isHrRecord || isActualDateReadOnly"  :disabled="!isRequester" />
                             </div>
 
                             <div class="col-2">
@@ -203,7 +207,7 @@
                     <button class="btn btn-danger" @click="denyRequest" v-if="canFinalApprove"
                         :disabled="approving">Deny</button>
 
-                    <div v-if="ob_ot_Request.status === 'PRE-APPROVED'">
+                    <div v-if="ob_ot_Request.status === 'PRE-APPROVED' && isRequester">
                         <button class="btn btn-success me-2" @click="saveActualDates" :disabled="approving">
                             <span v-if="approving">Saving...</span>
                             <span v-else>Save Actual {{ ob_ot_Request.type }} Dates</span>
@@ -225,6 +229,7 @@
 </template>
 
 <script>
+import Swal from 'sweetalert2';
 import API_BASE from '@/utils/api_config';
 import { getUserData } from '@/utils/get_user_data';
 import html2pdf from "html2pdf.js";
@@ -259,10 +264,13 @@ export default {
     },
 
     computed: {
-          shopList() {
-    const raw = this.ob_ot_Request?.shop_location || "";
-    return raw.split(",").map(s => s.trim()).filter(Boolean);
+         isRequester() {
+    return String(this.user.emp_id) === String(this.ob_ot_Request.emp_id);
   },
+        shopList() {
+            const raw = this.ob_ot_Request?.shop_location || "";
+            return raw.split(",").map(s => s.trim()).filter(Boolean);
+        },
 
         isHrRecord() {
             return this.ob_ot_Request.status === 'APPROVED';
@@ -601,27 +609,41 @@ export default {
         },
 
         formatDisplayDT(dt) {
-    if (!dt) return "";
-    const d = new Date(dt);
-    if (isNaN(d.getTime())) return String(dt);
+            if (!dt) return "";
 
-    // output: MM/DD/YYYY hh:mm AM/PM
-    return d.toLocaleString("en-US", {
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: true
-    });
-  },
+            // remove GMT and day name, keep "11 Feb 2026 10:53:00"
+            const cleaned = String(dt)
+                .replace(/^[A-Za-z]{3},\s*/, "")     // remove "Wed, "
+                .replace(/\sGMT\s*$/i, "")          // remove " GMT"
+                .trim();
 
-  // for API payload saving actual dates (datetime-local -> ISO-ish)
-  toBackendDT(dtLocal) {
-    if (!dtLocal) return null;
-    const d = new Date(dtLocal);
-    return d.toISOString().slice(0, 19).replace("T", " "); // yyyy-mm-dd HH:MM:SS
-  },
+            // build an ISO-like string then interpret as Asia/Manila by formatting only
+            const d = new Date(cleaned + " GMT+0800"); // force PH offset
+
+            if (isNaN(d.getTime())) return String(dt);
+
+            const parts = new Intl.DateTimeFormat("en-CA", {
+                timeZone: "Asia/Manila",
+                year: "numeric",
+                month: "2-digit",
+                day: "2-digit",
+                hour: "2-digit",
+                minute: "2-digit",
+                second: "2-digit",
+                hour12: false,
+            }).formatToParts(d);
+
+            const get = (t) => parts.find(p => p.type === t)?.value ?? "";
+            return `${get("year")}-${get("month")}-${get("day")} ${get("hour")}:${get("minute")}:${get("second")}`;
+        },
+
+
+        // for API payload saving actual dates (datetime-local -> ISO-ish)
+        toBackendDT(dtLocal) {
+            if (!dtLocal) return null;
+            const d = new Date(dtLocal);
+            return d.toISOString().slice(0, 19).replace("T", " "); // yyyy-mm-dd HH:MM:SS
+        },
 
 
     }

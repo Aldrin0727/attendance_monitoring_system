@@ -524,12 +524,19 @@ def update_approved__deny_leaves():
         requester_emp_id = cur.get("emp_id")
 
         # ✅ Block self-approval
-        if requester_emp_id and emp_id and str(requester_emp_id) == str(emp_id):
+        requester_emp_id = request.form.get("requester_emp_id")
+        approver_emp_id  = request.form.get("approver_emp_id")
+
+
+        # Block self-approval
+        if requester_emp_id and approver_emp_id and str(requester_emp_id) == str(approver_emp_id):
             cursor.close()
             return jsonify({
                 "success": False,
                 "error": "Self-approval is not allowed. Another Department Head must approve this request."
             }), 403
+
+
 
 
         current_status = cur.get("status")
