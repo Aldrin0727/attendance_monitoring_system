@@ -152,38 +152,67 @@ export default {
       return raw.split(",").map(s => s.trim()).filter(Boolean);
     }
   },
-    methods: {
-        format(value) {
-            if (!value) return '-';
+  methods: {
+  monthToNumber(mon) {
+    const m = {
+      Jan: "01", Feb: "02", Mar: "03", Apr: "04",
+      May: "05", Jun: "06", Jul: "07", Aug: "08",
+      Sep: "09", Oct: "10", Nov: "11", Dec: "12"
+    };
+    return m[mon] || "01";
+  },
 
-            // Case 1: MySQL datetime
-            if (typeof value === 'string' && value.includes('-') && value.includes(':')) {
-                return value.replace('T', ' ').replace(' GMT', '').slice(0, 16);
-            }
+  // returns "YYYY-MM-DD HH:MM:SS" (no timezone conversion)
+  toMySQLDateTime(value) {
+    if (!value) return "";
 
-            // Case 2: JS Date string (Fri, 12 Dec 2025 13:39:00 GMT)
-            const d = new Date(value);
-            
-            const year = d.getUTCFullYear();
-            const month = String(d.getUTCMonth() + 1).padStart(2, '0');
-            const day = String(d.getUTCDate()).padStart(2, '0');
-            const hours = String(d.getUTCHours()).padStart(2, '0');
-            const minutes = String(d.getUTCMinutes()).padStart(2, '0');
+    const s = String(value).trim();
 
-
-            return `${year}-${month}-${day} ${hours}:${minutes}`;
-        },
-        formatApproved(dt) {
-            if (!dt) return "";
-
-            const d = new Date(dt);
-            const pad = (n) => String(n).padStart(2, "0");
-
-            return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())} ` +
-                `${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}:${pad(d.getUTCSeconds())}`;
-        }
-
+    // MySQL: "YYYY-MM-DD HH:MM:SS" or "YYYY-MM-DD HH:MM"
+    if (/^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}/.test(s)) {
+      return s.length >= 19 ? s.slice(0, 19) : (s + ":00").slice(0, 19);
     }
+
+    // ISO: "YYYY-MM-DDTHH:MM:SS" or "YYYY-MM-DDTHH:MM"
+    if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(s)) {
+      const base = s.replace("T", " ");
+      return base.length >= 19 ? base.slice(0, 19) : (base + ":00").slice(0, 19);
+    }
+
+    // RFC: "Wed, 12 Feb 2026 14:47:00 GMT" (NO timezone conversion)
+    const rfc = s.match(
+      /^[A-Za-z]{3},\s(\d{1,2})\s([A-Za-z]{3})\s(\d{4})\s(\d{2}):(\d{2})(?::(\d{2}))?/
+    );
+    if (rfc) {
+      const dd = String(rfc[1]).padStart(2, "0");
+      const mm = this.monthToNumber(rfc[2]);
+      const yyyy = rfc[3];
+      const HH = rfc[4];
+      const MM = rfc[5];
+      const SS = rfc[6] || "00";
+      return `${yyyy}-${mm}-${dd} ${HH}:${MM}:${SS}`;
+    }
+
+    return s; // fallback para makita mo pa rin raw format
+  },
+
+// outputs: "YYYY-MM-DD HH:MM:SS"  ✅ SAME as approval
+format(value) {
+  if (!value) return "-";
+  const dt = this.toMySQLDateTime(value);
+  if (!dt) return "-";
+  return dt.slice(0, 19); // YYYY-MM-DD HH:MM:SS
+},
+
+  // Used for date_created/date_approved in PDF (military with seconds)
+  // outputs: "YYYY-MM-DD HH:MM:SS"
+  formatApproved(dt) {
+    if (!dt) return "";
+    const out = this.toMySQLDateTime(dt);
+    return out || "";
+  }
+}
+
 };
 </script>
 

@@ -138,17 +138,50 @@
                         <hr class="mt-0">
 
                         <div class="row">
-                            <div class="col-5">
-                                <label class="form-label label-sm">Actual Start Date & Time</label>
-                                <input type="datetime-local" class="form-control" v-model="actualDates.actual_from"
-                                    :readonly="isHrRecord || isActualDateReadOnly"  :disabled="!isRequester"/>
-                            </div>
+<!-- Actual Start -->
+<div class="col-5">
+  <label class="form-label label-sm">Actual Start Date & Time</label>
 
-                            <div class="col-5">
-                                <label class="form-label label-sm">Actual End Date & Time</label>
-                                <input type="datetime-local" class="form-control" v-model="actualDates.actual_to"
-                                    :readonly="isHrRecord || isActualDateReadOnly"  :disabled="!isRequester" />
-                            </div>
+  <!-- READONLY DISPLAY (military) -->
+  <input
+    v-if="isHrRecord || isActualDateReadOnly || !isRequester"
+    type="text"
+    class="form-control"
+    :value="formatDisplayDT(ob_ot_Request.actual_from)"
+    readonly
+  />
+
+  <!-- EDITABLE -->
+  <input
+    v-else
+    type="datetime-local"
+    class="form-control"
+    v-model="actualDates.actual_from"
+  />
+</div>
+
+<!-- Actual End -->
+<div class="col-5">
+  <label class="form-label label-sm">Actual End Date & Time</label>
+
+  <!-- READONLY DISPLAY (military) -->
+  <input
+    v-if="isHrRecord || isActualDateReadOnly || !isRequester"
+    type="text"
+    class="form-control"
+    :value="formatDisplayDT(ob_ot_Request.actual_to)"
+    readonly
+  />
+
+  <!-- EDITABLE -->
+  <input
+    v-else
+    type="datetime-local"
+    class="form-control"
+    v-model="actualDates.actual_to"
+  />
+</div>
+
 
                             <div class="col-2">
                                 <label class="form-label label-sm">Hours</label>
@@ -473,59 +506,81 @@ export default {
         //         });
         // },
 
-        async submitDecision(decision) {
-            if (this.approving) return;
+async submitDecision(decision) {
+  if (this.approving) return;
 
-            this.approving = true;
-            this.loaderTitle = "Processing approval";
-            this.loaderSubtitle = decision === "APPROVED"
-                ? "Please wait while we generate PDF & send the email."
-                : "Please wait while we update the request status.";
+  this.approving = true;
+  this.loaderTitle = "Processing approval";
+  this.loaderSubtitle = decision === "APPROVED"
+    ? "Please wait while we update the status, generate PDF & send the email."
+    : "Please wait while we update the request status.";
 
-            try {
-                let pdfBlob = null;
-                if (decision === "APPROVED") {
-                    pdfBlob = await this.generateOBOTPdfBlob();
-                }
+  try {
+    // helper: call endpoint
+    const postDecision = async (withPdf = false, pdfBlob = null) => {
+      const fd = new FormData();
+      fd.append("args", decision);
+      fd.append("ref_number", this.ob_ot_Request.ref_number);
+      fd.append("user", `${this.user.first_name} ${this.user.last_name}`);
+      fd.append("emp_id", this.user.emp_id);
 
-                const fd = new FormData();
-                fd.append("args", decision);
-                fd.append("ref_number", this.ob_ot_Request.ref_number);
-                fd.append("user", `${this.user.first_name} ${this.user.last_name}`);
-                // fd.append("emp_id", this.ob_ot_Request.emp_id);
-                fd.append("emp_id", this.user.emp_id);
+      if (withPdf && pdfBlob) {
+        fd.append("pdf", pdfBlob, `${this.ob_ot_Request.ref_number}.pdf`);
+      }
 
-                if (pdfBlob) {
-                    fd.append("pdf", pdfBlob, `${this.ob_ot_Request.ref_number}.pdf`);
-                }
+      const res = await fetch(`${API_BASE}/update_approved_deny_otob`, {
+        method: "POST",
+        body: fd,
+      });
 
-                const res = await fetch(`${API_BASE}/update_approved_deny_otob`, {
-                    method: "POST",
-                    body: fd,
-                });
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.error || "Request failed");
+      return data;
+    };
 
-                const data = await res.json();
-                if (!res.ok || !data.success) throw new Error(data.error || "Request failed");
+    if (decision === "APPROVED") {
+      // 1) update DB first (NO PDF)
+     const first = await postDecision(false);
 
-                await Swal.fire({
-                    icon: "success",
-                    title: `Request ${decision}`,
-                    html: decision === "APPROVED" ? "<b>Email sent to HR.</b>" : "",
-                    confirmButtonColor: "#28a745",
-                });
+      // optional: update UI agad (so print shows APPROVED even before refresh)
+      this.ob_ot_Request.status = first.status || "APPROVED";
+        this.ob_ot_Request.approved_by = first.approved_by || `${this.user.first_name} ${this.user.last_name}`;
+        this.ob_ot_Request.date_approved = first.date_approved || this.ob_ot_Request.date_approved;
 
-                this.$emit("updateDataTable");
-                this.closeModal();
+      // 2) now generate PDF using updated local data
+      const pdfBlob = await this.generateOBOTPdfBlob();
 
-            } catch (err) {
-                Swal.fire("Error", err?.message || "Something went wrong", "error");
-            } finally {
-                this.approving = false;
-                this.loaderTitle = "Processing";
-                this.loaderSubtitle = "Please wait...";
-            }
-        },
+      // 3) call again WITH PDF => backend sees status already APPROVED and will send email w/ PDF
+      await postDecision(true, pdfBlob);
 
+      await Swal.fire({
+        icon: "success",
+        title: `Request APPROVED`,
+        html: "<b>Email sent to HR.</b>",
+        confirmButtonColor: "#28a745",
+      });
+    } else {
+      // DENIED / PRE-APPROVED normal single call
+      await postDecision(false);
+
+      await Swal.fire({
+        icon: "success",
+        title: `Request ${decision}`,
+        confirmButtonColor: "#28a745",
+      });
+    }
+
+    this.$emit("updateDataTable");
+    this.closeModal();
+
+  } catch (err) {
+    Swal.fire("Error", err?.message || "Something went wrong", "error");
+  } finally {
+    this.approving = false;
+    this.loaderTitle = "Processing";
+    this.loaderSubtitle = "Please wait...";
+  }
+},
 
 
 
@@ -545,19 +600,92 @@ export default {
         //     return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
         // },
 
-        formatForDateTimeLocal(value) {
-            if (!value) return '';
+formatForDateTimeLocal(value) {
+  if (!value) return "";
 
-            const d = new Date(value);
+  const s = String(value).trim();
 
-            const year = d.getUTCFullYear();
-            const month = String(d.getUTCMonth() + 1).padStart(2, '0');
-            const day = String(d.getUTCDate()).padStart(2, '0');
-            const hours = String(d.getUTCHours()).padStart(2, '0');
-            const minutes = String(d.getUTCMinutes()).padStart(2, '0');
+  // 1) DB: "YYYY-MM-DD HH:MM:SS" or "YYYY-MM-DD HH:MM"
+  // datetime-local needs "YYYY-MM-DDTHH:MM" (24-hour)
+  if (/^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}/.test(s)) {
+    return s.replace(" ", "T").slice(0, 16);
+  }
 
-            return `${year}-${month}-${day}T${hours}:${minutes}`;
-        },
+  // 2) ISO: "YYYY-MM-DDTHH:MM:SS" or "YYYY-MM-DDTHH:MM"
+  if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(s)) {
+    return s.slice(0, 16);
+  }
+
+  // 3) RFC: "Wed, 12 Feb 2026 14:47:00 GMT"
+  // IMPORTANT: keep time as written (NO timezone conversion)
+  // Military time already (14:47)
+  const rfc = s.match(/^[A-Za-z]{3},\s(\d{1,2})\s([A-Za-z]{3})\s(\d{4})\s(\d{2}):(\d{2})/);
+  if (rfc) {
+    const dd = String(rfc[1]).padStart(2, "0");
+    const mon = rfc[2];
+    const yyyy = rfc[3];
+    const HH = rfc[4];
+    const MM = rfc[5];
+
+    const monthMap = {
+      Jan: "01", Feb: "02", Mar: "03", Apr: "04",
+      May: "05", Jun: "06", Jul: "07", Aug: "08",
+      Sep: "09", Oct: "10", Nov: "11", Dec: "12"
+    };
+    const mm = monthMap[mon] || "01";
+
+    return `${yyyy}-${mm}-${dd}T${HH}:${MM}`;
+  }
+
+  // fallback (last resort; may timezone shift)
+  const d = new Date(s);
+  if (isNaN(d.getTime())) return "";
+
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+},
+
+formatDisplayDT(dt) {
+  if (!dt) return "";
+
+  const s = String(dt).trim();
+
+  // MySQL "YYYY-MM-DD HH:MM:SS" / "YYYY-MM-DD HH:MM"
+  if (/^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}/.test(s)) {
+    return s.length >= 19 ? s.slice(0, 19) : (s + ":00").slice(0, 19);
+  }
+
+  // ISO "YYYY-MM-DDTHH:MM(:SS)"
+  if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(s)) {
+    const base = s.replace("T", " ");
+    return base.length >= 19 ? base.slice(0, 19) : (base + ":00").slice(0, 19);
+  }
+
+  // RFC "Wed, 12 Feb 2026 14:47:00 GMT" (NO timezone conversion)
+  // Military time already (14:47:00)
+  const rfc = s.match(/^[A-Za-z]{3},\s(\d{1,2})\s([A-Za-z]{3})\s(\d{4})\s(\d{2}):(\d{2})(?::(\d{2}))?/);
+  if (rfc) {
+    const dd = String(rfc[1]).padStart(2, "0");
+    const mon = rfc[2];
+    const yyyy = rfc[3];
+    const HH = rfc[4];
+    const MM = rfc[5];
+    const SS = rfc[6] || "00";
+
+    const monthMap = {
+      Jan: "01", Feb: "02", Mar: "03", Apr: "04",
+      May: "05", Jun: "06", Jul: "07", Aug: "08",
+      Sep: "09", Oct: "10", Nov: "11", Dec: "12"
+    };
+    const mm = monthMap[mon] || "01";
+
+    return `${yyyy}-${mm}-${dd} ${HH}:${MM}:${SS}`;
+  }
+
+  return s;
+},
+
+
 
         async saveActualDates() {
             if (this.approving) return;
@@ -574,11 +702,13 @@ export default {
             try {
                 const payload = {
                     ref_number: this.ob_ot_Request.ref_number,
-                    actual_from: this.formatDateTime(this.actualDates.actual_from),
-                    actual_to: this.formatDateTime(this.actualDates.actual_to),
+                    actual_from: this.toBackendDT(this.actualDates.actual_from),
+                    actual_to: this.toBackendDT(this.actualDates.actual_to),
                     actual_hours: this.total_time,
                     user: `${this.user.first_name} ${this.user.last_name}`
                 };
+
+                console.log(payload)
 
                 const res = await fetch(`${API_BASE}/update_actual_date`, {
                     method: "POST",
@@ -638,12 +768,10 @@ export default {
         },
 
 
-        // for API payload saving actual dates (datetime-local -> ISO-ish)
         toBackendDT(dtLocal) {
             if (!dtLocal) return null;
-            const d = new Date(dtLocal);
-            return d.toISOString().slice(0, 19).replace("T", " "); // yyyy-mm-dd HH:MM:SS
-        },
+            return dtLocal.replace("T", " ") + ":00";
+        }
 
 
     }

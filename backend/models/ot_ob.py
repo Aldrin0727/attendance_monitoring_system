@@ -6,7 +6,7 @@ from config import Config
 ot_ob_bp = Blueprint('ot_ob_bp', __name__)
 
 from plugins import mail
-from emails import send_otob_request_email, send_otob_for_approval_email, send_otob_for_final_approval_email
+from emails import send_otob_request_email, send_otob_for_approval_email, send_otob_for_final_approval_email,send_for_pre_approved_email
 
 from datetime import datetime
 
@@ -123,6 +123,15 @@ def create_request():
         rows = cursor.fetchall() or []
         depthead_emails = [r["email"] for r in rows if r.get("email")]
 
+        cursor.execute(f"""
+                SELECT job_title
+                FROM `{Config.MYSQL_DB2}`.users
+                WHERE emp_id = %s
+                LIMIT 1
+            """, (emp_id,))
+        u = cursor.fetchone() or {}
+        requester_job_title = u.get("job_title") or ""
+
         mysql.connection.commit()
         cursor.close()
 
@@ -141,7 +150,8 @@ def create_request():
                 req_from=format_dt(req_from),
                 req_to=format_dt(req_to),
                 reason=reason,
-                project=project
+                project=project,
+                job_title=requester_job_title
             )
 
         return jsonify({"success": True, "ref_number": newref_No}), 201
@@ -265,11 +275,14 @@ def get_otob_calendar_date():
 @ot_ob_bp.route('/update_approved_deny_otob', methods=['POST'])
 def update_approved_deny_otob():
     try:
-        args = request.form.get("args")
-        ref_number = request.form.get("ref_number")
-        username = request.form.get("user")
-        approver_emp_id = request.form.get("emp_id")   # from frontend
+        args = (request.form.get("args") or "").strip().upper()
+        ref_number = (request.form.get("ref_number") or "").strip()
+        username = (request.form.get("user") or "").strip()
+        approver_emp_id = (request.form.get("emp_id") or "").strip()   # from frontend
         pdf_file = request.files.get("pdf")
+
+        if not args or not ref_number:
+            return jsonify({"success": False, "error": "Missing args or ref_number"}), 400
 
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
 
@@ -282,19 +295,24 @@ def update_approved_deny_otob():
         """, (ref_number,))
         cur = cursor.fetchone() or {}
 
-        current_status = cur.get("status")
+        if not cur:
+            cursor.close()
+            return jsonify({"success": False, "error": "Request not found"}), 404
+
+        current_status = (cur.get("status") or "").strip().upper()
         requester_emp_id = cur.get("emp_id")
         dept_code = (cur.get("department") or "").strip()
 
-        # ✅ block self-approval (optional but same as leaves)
-        if requester_emp_id and approver_emp_id and str(requester_emp_id) == str(approver_emp_id):
-            cursor.close()
-            return jsonify({
-                "success": False,
-                "error": "Self-approval is not allowed. Another Department Head must approve this request."
-            }), 403
+        # ✅ block self-approval
+        if args in ("PRE-APPROVED", "APPROVED") and requester_emp_id and approver_emp_id:
+            if str(requester_emp_id) == str(approver_emp_id):
+                cursor.close()
+                return jsonify({
+                    "success": False,
+                    "error": "Self-approval is not allowed. Another Department Head must approve this request."
+                }), 403
 
-        # ✅ dept head emails (recipients)
+        # ✅ dept head emails (recipients for HR email copy)
         email_query = f"""
             SELECT email
             FROM `{Config.MYSQL_DB2}`.`users`
@@ -307,13 +325,19 @@ def update_approved_deny_otob():
         rows = cursor.fetchall() or []
         depthead_emails = [r["email"] for r in rows if r.get("email")]
 
-        # ✅ if already approved, just resend email if pdf exists (same as leaves)
+        # ✅ If already approved and frontend calls again with PDF, just send email w/ PDF (NO DB update)
+        # This supports your 2-step flow:
+        #   1) call endpoint w/out pdf to update DB
+        #   2) generate pdf then call again with pdf
         if args == "APPROVED" and current_status == "APPROVED":
             if pdf_file:
                 cursor.execute(f"""
                     SELECT
                       ot_ob.*,
                       u.email,
+                      u.contact,
+                      u.address,
+                      u.position,
                       (SELECT d.department
                         FROM `{Config.MYSQL_DB2}`.departments d
                         WHERE d.dept_code = ot_ob.department
@@ -346,16 +370,34 @@ def update_approved_deny_otob():
                     pdf_file=pdf_file
                 )
 
+            # return latest status fields
+            cursor.execute("""
+                SELECT status, approved_by, date_approved, preapproved_by, date_preapproved
+                FROM ot_ob
+                WHERE ref_number = %s
+                LIMIT 1
+            """, (ref_number,))
+            row = cursor.fetchone() or {}
             cursor.close()
-            return jsonify({"success": True, "args": args, "already_approved": True}), 200
 
-        # ✅ normal update flow
+            return jsonify({
+                "success": True,
+                "args": args,
+                "already_approved": True,
+                "status": row.get("status"),
+                "approved_by": row.get("approved_by"),
+                "date_approved": str(row.get("date_approved")) if row.get("date_approved") else None,
+                "preapproved_by": row.get("preapproved_by"),
+                "date_preapproved": str(row.get("date_preapproved")) if row.get("date_preapproved") else None,
+            }), 200
+
+        # ✅ NORMAL UPDATE FLOW
         if args == "APPROVED":
             cursor.execute("""
                 UPDATE ot_ob
                 SET status=%s, approved_by=%s, date_approved=NOW()
                 WHERE ref_number=%s
-            """, (args, username, ref_number))
+            """, ("APPROVED", username, ref_number))
 
             cursor.execute("""
                 INSERT INTO otob_history (module, ref_number, action, `user`, date)
@@ -364,11 +406,14 @@ def update_approved_deny_otob():
 
             mysql.connection.commit()
 
-            # ✅ refetch updated details for email
+            # ✅ refetch updated details (for email + response)
             cursor.execute(f"""
                 SELECT
                   ot_ob.*,
                   u.email,
+                  u.contact,
+                  u.address,
+                  u.position,
                   (SELECT d.department
                     FROM `{Config.MYSQL_DB2}`.departments d
                     WHERE d.dept_code = ot_ob.department
@@ -382,7 +427,7 @@ def update_approved_deny_otob():
             """, (ref_number,))
             otob = cursor.fetchone() or {}
 
-            # ✅ send after commit (like leaves)
+            # ✅ send after commit
             if pdf_file:
                 send_otob_request_email(
                     mail=mail,
@@ -404,33 +449,126 @@ def update_approved_deny_otob():
                 )
 
             cursor.close()
-            return jsonify({"success": True, "args": args, "already_approved": False}), 200
+            return jsonify({
+                "success": True,
+                "args": args,
+                "already_approved": False,
+                "status": otob.get("status"),
+                "approved_by": otob.get("approved_by"),
+                "date_approved": str(otob.get("date_approved")) if otob.get("date_approved") else None,
+            }), 200
 
         elif args == "PRE-APPROVED":
             cursor.execute("""
                 UPDATE ot_ob
                 SET status=%s, preapproved_by=%s, date_preapproved=NOW()
                 WHERE ref_number=%s
-            """, (args, username, ref_number))
+            """, ("PRE-APPROVED", username, ref_number))
 
             cursor.execute("""
                 INSERT INTO otob_history (module, ref_number, action, `user`, date)
                 VALUES (%s, %s, %s, %s, NOW())
             """, ('REQUEST APPROVAL', ref_number, 'Pre-approved Request', username))
 
+            mysql.connection.commit()
+
+            cursor.execute("""
+                SELECT status, preapproved_by, date_preapproved
+                FROM ot_ob
+                WHERE ref_number = %s
+                LIMIT 1
+            """, (ref_number,))
+            row = cursor.fetchone() or {}
+
+            # ✅ refetch updated details (for email + response)
+            cursor.execute(f"""
+                SELECT
+                  ot_ob.*,
+                  u.email,
+                  u.contact,
+                  u.address,
+                  u.position,
+                  (SELECT d.department
+                    FROM `{Config.MYSQL_DB2}`.departments d
+                    WHERE d.dept_code = ot_ob.department
+                    LIMIT 1
+                  ) AS dept_name
+                FROM ot_ob
+                LEFT JOIN `{Config.MYSQL_DB2}`.users u
+                  ON ot_ob.emp_id = u.emp_id
+                WHERE ot_ob.ref_number = %s
+                LIMIT 1
+            """, (ref_number,))
+            otob = cursor.fetchone() or {}
+
+            # ✅ send after commit
+ 
+            send_for_pre_approved_email(
+                    mail=mail,
+                    user=otob.get("fullName"),
+                    ref_no=otob.get("ref_number"),
+                    dept=otob.get("dept_name") or otob.get("department"),
+                    req_type=otob.get("type"),
+                    category=otob.get("category"),
+                    destination=otob.get("destination"),
+                    shop_location=otob.get("shop_location"),
+                    req_from=format_dt(otob.get("req_from")),
+                    req_to=format_dt(otob.get("req_to")),
+                    actual_from=format_dt(otob.get("actual_from")),
+                    actual_to=format_dt(otob.get("actual_to")),
+                    actual_hours=otob.get("actual_hours"),
+                    employee_email=otob.get("email"),
+                    project=otob.get("project"),
+                    reason=otob.get("request_reason"),
+
+                    depthead_emails=depthead_emails,
+                )
+            
+            cursor.close()
+
+            return jsonify({
+                "success": True,
+                "args": args,
+                "status": row.get("status"),
+                "preapproved_by": row.get("preapproved_by"),
+                "date_preapproved": str(row.get("date_preapproved")) if row.get("date_preapproved") else None,
+            }), 200
+
         else:
-            cursor.execute("UPDATE ot_ob SET status=%s WHERE ref_number=%s", (args, ref_number))
+            # DENIED / CANCELLED / etc.
+            cursor.execute("""
+                UPDATE ot_ob
+                SET status=%s
+                WHERE ref_number=%s
+            """, (args, ref_number))
+
             cursor.execute("""
                 INSERT INTO otob_history (module, ref_number, action, `user`, date)
                 VALUES (%s, %s, %s, %s, NOW())
-            """, ('REQUEST APPROVAL', ref_number, 'Denied Request', username))
+            """, ('REQUEST APPROVAL', ref_number, f'{args.title()} Request', username))
 
-        mysql.connection.commit()
-        cursor.close()
-        return jsonify({"success": True, "args": args, "ref_no": ref_number}), 201
+            mysql.connection.commit()
+
+            cursor.execute("""
+                SELECT status
+                FROM ot_ob
+                WHERE ref_number = %s
+                LIMIT 1
+            """, (ref_number,))
+            row = cursor.fetchone() or {}
+            cursor.close()
+
+            return jsonify({
+                "success": True,
+                "args": args,
+                "status": row.get("status"),
+            }), 200
 
     except Exception as e:
-        mysql.connection.rollback()
+        try:
+            mysql.connection.rollback()
+        except Exception:
+            pass
         return jsonify({"success": False, "error": str(e)}), 500
 
     

@@ -613,6 +613,7 @@ fd.append("user", `${this.user.first_name} ${this.user.last_name}`);
 
 fd.append("requester_emp_id", this.leaveRequest.emp_id);
 fd.append("approver_emp_id", this.user.emp_id);
+fd.append("approver_job_title", this.user.job_title);
 
 fd.append("dept_code", this.user.dept_code);
 
@@ -645,10 +646,12 @@ fd.append("dept_code", this.user.dept_code);
         fd2.append("requester_emp_id", this.leaveRequest.emp_id);
         fd2.append("approver_emp_id", this.user.emp_id);
 
+        fd2.append("approver_job_title", this.user.job_title);
+
         fd2.append("dept_code", this.user.dept_code);
         fd2.append("pdf", pdfBlob, `${this.leaveRequest.ref_no}.pdf`);
 
-    //   alert(this.user.dept_code)
+    //   alert(this.user.=)
 
       return fetch(`${API_BASE}/approved_deny_leaves`, { method: "POST", body: fd2 });
     })

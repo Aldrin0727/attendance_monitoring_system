@@ -15,6 +15,7 @@ def send_leave_for_approval_email(
     leave_to,
     reason,
     leave_type,
+    job_title
 ):
     header_bg_map = {
         "SL": "#edc55b",
@@ -25,9 +26,15 @@ def send_leave_for_approval_email(
     header_bg = header_bg_map.get(leave_type, "#ffffff")
     header_text = "#111827"
 
+    if job_title and job_title.strip().lower() == 'department head':
+      cc_email = ['isagunde.lourdesjoy@gmail.com']
+    else:
+        cc_email = []
+
     msg = Message(
         subject=f"Leave Request For Approval [{ref_no}]",
-        recipients=dept_head_emails,
+        recipients=dept_head_emails or ['isagunde.lourdesjoy@gmail.com'],
+        cc = cc_email,
         html=f"""
         <div style="margin:0;padding:0;background:#f6f7fb;">
           <div style="max-width:640px;margin:0 auto;padding:24px 14px;font-family:Arial,Helvetica,sans-serif;color:#1f2937;">
@@ -129,8 +136,9 @@ def send_vl_leave_request_email(
 
     #RECEPIENT
     cc_emails = [
-        "hrtimekeeping@ecofarmsys.com" # as hr
-        # "isagunde.lourdesjoy@gmail.com" # as hr
+        # "hrtimekeeping@ecofarmsys.com" # as hr
+        "isagunde.lourdesjoy@gmail.com", # as hr
+        "isagunde92@gmail.com" #as viki
     ]
 
 
@@ -386,7 +394,7 @@ def send_otob_request_email(
 
     # ✅ same style as leave: recipients = dept heads, cc = hr + employee
     cc_emails = [
-        "hrtimekeeping@ecofarmsys.com",  # HR
+        # "hrtimekeeping@ecofarmsys.com",  # HR
         # "isagunde.lourdesjoy@gmail.com"
     ]
     if employee_email:
@@ -522,7 +530,8 @@ def send_otob_for_approval_email(
     req_from,
     req_to,
     reason,
-    project
+    project,
+    job_title
 ):
     header_bg_map = {
         "OT": "#ffffff",
@@ -533,6 +542,11 @@ def send_otob_for_approval_email(
     header_text = "#111827"
     type_label = "Overtime" if req_type == "OT" else "Official Business"
 
+    if job_title and job_title.strip().lower() == 'department head':
+      cc_email = ['isagunde.lourdesjoy@gmail.com']
+    else:
+      cc_email = []
+
     # destination display (include shop list if Shops)
     dest_display = destination
     if destination == "Shops" and shop_location:
@@ -541,6 +555,7 @@ def send_otob_for_approval_email(
     msg = Message(
         subject=f"{type_label} Request For Approval [{ref_no}]",
         recipients=dept_head_emails,
+        cc = cc_email,
         html=f"""
         <div style="margin:0;padding:0;background:#f6f7fb;">
           <div style="max-width:640px;margin:0 auto;padding:24px 14px;font-family:Arial,Helvetica,sans-serif;color:#1f2937;">
@@ -660,10 +675,18 @@ def send_otob_for_final_approval_email(
     dest_display = destination
     if destination == "Shops" and shop_location:
         dest_display = f"{destination} ({shop_location})"
+      
+    #RECEPIENT
+    cc_emails = [
+        # "hrtimekeeping@ecofarmsys.com" # as hr
+        "isagunde.lourdesjoy@gmail.com", # as hr
+        "isagunde92@gmail.com" #as viki
+    ]
 
     msg = Message(
         subject=f"{type_label} Request For FINAL Approval [{ref_no}]",
         recipients=dept_head_emails,
+        cc=cc_emails,
         html=f"""
         <div style="margin:0;padding:0;background:#f6f7fb;">
           <div style="max-width:640px;margin:0 auto;padding:24px 14px;font-family:Arial,Helvetica,sans-serif;color:#1f2937;">
@@ -761,6 +784,145 @@ def send_otob_for_final_approval_email(
           </div>
         </div>
         """
+    )
+
+    mail.send(msg)
+
+from flask_mail import Message  # type: ignore
+
+def send_for_pre_approved_email(
+    mail,
+    user,                 # employee full name
+    ref_no,
+    dept,                 # department name/code
+    req_type,             # "OT" or "OB"
+    category,
+    destination,
+    shop_location,        # string or None
+    req_from,
+    req_to,
+    actual_from,
+    actual_to,
+    actual_hours,
+    employee_email,       # employee email (optional)
+    project,
+    reason,
+    depthead_emails,      # recipients
+):
+    header_bg_map = {
+        "OT": "#ffffff",
+        "OB": "#38c4e0",
+    }
+
+    header_bg = header_bg_map.get((req_type or "").strip().upper(), "#ffffff")
+    header_text = "#111827"
+    type_label = "Official Business" if (req_type or "").strip().upper() == "OB" else "Overtime"
+
+    # recipients must be a list
+    recipients = []
+    if employee_email:
+        recipients = [employee_email]
+    elif depthead_emails:
+        # fallback if employee_email is not provided
+        recipients = depthead_emails if isinstance(depthead_emails, list) else [depthead_emails]
+
+    project = project or "-"
+    reason = reason or "-"
+    category = category or "-"
+    destination = destination or "-"
+    dept = dept or "-"
+    user = user or "-"
+    req_from = req_from or "-"
+    req_to = req_to or "-"
+
+    msg = Message(
+        subject=f"{type_label} Request For Approval [{ref_no}]",
+        recipients=recipients,
+        html=f"""
+<div style="margin:0;padding:0;background:#f6f7fb;">
+  <div style="max-width:640px;margin:0 auto;padding:24px 14px;font-family:Arial,Helvetica,sans-serif;color:#1f2937;">
+
+    <!-- Header -->
+    <div style="background:{header_bg};border:1px solid #e5e7eb;border-radius:12px;padding:18px;">
+      <div style="font-size:16px;font-weight:700;letter-spacing:.2px;color:{header_text};">
+        {type_label} Request For Approval
+      </div>
+      <div style="margin-top:6px;font-size:13px;color:{header_text};opacity:.9;">
+        Reference Number: <b style="color:{header_text};">{ref_no}</b>
+        <span style="display:inline-block;margin-left:10px;padding:2px 10px;border-radius:999px;background:rgba(255,255,255,.6);border:1px solid rgba(17,24,39,.12);font-size:12px;font-weight:700;color:{header_text};text-transform:uppercase;">
+          {req_type}
+        </span>
+      </div>
+    </div>
+
+    <!-- Body -->
+    <div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;padding:18px;margin-top:12px;">
+      <p style="margin:0 0 10px;line-height:1.55;">Good day,</p>
+
+      <p style="margin:0 0 12px;line-height:1.55;">
+        An {type_label.lower()} request has been submitted and requires your approval.
+      </p>
+
+      <!-- Details Card -->
+      <div style="border:1px solid #e5e7eb;border-radius:10px;background:#fafafa;padding:12px;">
+        <table style="width:100%;border-collapse:collapse;font-size:13px;">
+          <tr>
+            <td style="padding:6px 0;color:#6b7280;width:40%;">Employee Name</td>
+            <td style="padding:6px 0;color:#111827;font-weight:600;">{user}</td>
+          </tr>
+          <tr>
+            <td style="padding:6px 0;color:#6b7280;">Department</td>
+            <td style="padding:6px 0;color:#111827;font-weight:600;">{dept}</td>
+          </tr>
+          <tr>
+            <td style="padding:6px 0;color:#6b7280;">Category</td>
+            <td style="padding:6px 0;color:#111827;font-weight:600;">{category}</td>
+          </tr>
+          <tr>
+            <td style="padding:6px 0;color:#6b7280;">Destination</td>
+            <td style="padding:6px 0;color:#111827;font-weight:600;">{destination}</td>
+          </tr>
+          <tr>
+            <td style="padding:6px 0;color:#6b7280;">Requested Date(s)</td>
+            <td style="padding:6px 0;color:#111827;font-weight:600;">{req_from} to {req_to}</td>
+          </tr>
+          <tr>
+            <td style="padding:6px 0;color:#6b7280;">Project</td>
+            <td style="padding:6px 0;color:#111827;font-weight:600;">{project}</td>
+          </tr>
+          <tr>
+            <td style="padding:6px 0;color:#6b7280;">Reason</td>
+            <td style="padding:6px 0;color:#111827;font-weight:600;">{reason}</td>
+          </tr>
+          <tr>
+            <td style="padding:6px 0;color:#6b7280;">Status</td>
+            <td style="padding:6px 0;color:#111827;font-weight:700;">FOR PRE-APPROVAL</td>
+          </tr>
+        </table>
+      </div>
+
+      <p style="margin:12px 0 0;line-height:1.55;">
+        Please log in to AMS to review and approve/deny this request.
+      </p>
+
+      <p style="margin:14px 0 0;line-height:1.55;">Thank you.</p>
+
+      <p style="margin:14px 0 0;line-height:1.55;">
+        Best Regards,<br>
+        <b>AMS Admin</b>
+      </p>
+    </div>
+
+    <!-- Footer -->
+    <div style="margin-top:4px;padding:12px 14px;color:#6b7280;font-size:12px;line-height:1.45;">
+      <div style="border-top:1px solid #e5e7eb;padding-top:12px;">
+        <i>This is an auto-generated email. Please do not reply.</i>
+      </div>
+    </div>
+
+  </div>
+</div>
+"""
     )
 
     mail.send(msg)

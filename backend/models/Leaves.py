@@ -114,19 +114,30 @@ def add_leave_details():
             FROM `{Config.MYSQL_DB2}`.`users`
             WHERE job_title = 'Department Head'
             AND department = %s
+            AND emp_id <> %s
             AND email IS NOT NULL
             AND email <> ''
         """
+        cursor.execute(email_query, (department, emp_id))
 
-        cursor.execute(email_query, (department,))
-        rows = cursor.fetchall()
-
+        rows = cursor.fetchall() or []
         depthead_emails = [r["email"] for r in rows if r.get("email")]
 
-        if depthead_emails:
-            send_leave_for_approval_email(
+
+        # get requester job_title from DB (reliable)
+        
+        cursor.execute(f"""
+                SELECT job_title
+                FROM `{Config.MYSQL_DB2}`.users
+                WHERE emp_id = %s
+                LIMIT 1
+            """, (emp_id,))
+        u = cursor.fetchone() or {}
+        requester_job_title = u.get("job_title") or ""
+
+        send_leave_for_approval_email(
                 mail=mail,
-                dept_head_emails=depthead_emails, 
+                dept_head_emails=depthead_emails,
                 employee_name=username,
                 ref_no=newref_No,
                 dept=department,
@@ -134,8 +145,10 @@ def add_leave_details():
                 leave_number=total_leave,
                 leave_from=leave_from,
                 leave_to=leave_to,
-                reason=leave_reason
+                reason=leave_reason,
+                job_title=requester_job_title
             )
+
 
 
         cursor.execute(
@@ -506,14 +519,20 @@ def update_approved__deny_leaves():
         args = request.form.get("args")
         ref_no = request.form.get("ref_no")
         username = request.form.get("user")
+
+        # NOTE: emp_id na ginagamit for computing balances = employee (requester)
+        # Sa frontend dapat ito yung leaveRequest.emp_id
         emp_id = request.form.get("emp_id")
+
         pdf_file = request.files.get("pdf")
-        department = request.form.get("dept_code")
+
+        requester_emp_id = request.form.get("requester_emp_id")
+        approver_emp_id = request.form.get("approver_emp_id")
 
         max_leave = 15
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
 
-        # ✅ get current status + leave_type + leave_number
+        # ✅ Get current leave record
         cursor.execute("""
             SELECT status, leave_type, leave_number, department, emp_id
             FROM Leave_Details
@@ -521,107 +540,94 @@ def update_approved__deny_leaves():
             LIMIT 1
         """, (ref_no,))
         cur = cursor.fetchone() or {}
-        requester_emp_id = cur.get("emp_id")
 
-        # ✅ Block self-approval
-        requester_emp_id = request.form.get("requester_emp_id")
-        approver_emp_id  = request.form.get("approver_emp_id")
+        current_status = cur.get("status")
+        leave_type = cur.get("leave_type")
+        used_count = cur.get("leave_number") or 0
+        leave_dept = (cur.get("department") or "")
+        real_requester_emp_id = cur.get("emp_id")  # requester based on DB
 
-
-        # Block self-approval
-        if requester_emp_id and approver_emp_id and str(requester_emp_id) == str(approver_emp_id):
+        # ✅ Block self-approval (use DB requester if available)
+        req_id = requester_emp_id or real_requester_emp_id
+        if req_id and approver_emp_id and str(req_id) == str(approver_emp_id):
             cursor.close()
             return jsonify({
                 "success": False,
                 "error": "Self-approval is not allowed. Another Department Head must approve this request."
             }), 403
 
-
-
-
-        current_status = cur.get("status")
-        leave_type = cur.get("leave_type")
-        used_count = cur.get("leave_number") or 0
-        leave_dept = (cur.get("department") or "")
-
+        # ✅ Dept head recipients (exclude requester if dept head)
         email_query = f"""
             SELECT email
             FROM `{Config.MYSQL_DB2}`.`users`
             WHERE job_title = 'Department Head'
-            AND department = %s
-            AND email IS NOT NULL
-            AND email <> ''
+              AND department = %s
+              AND emp_id <> %s
+              AND email IS NOT NULL
+              AND email <> ''
         """
-
-        cursor.execute(email_query, (leave_dept,))
-        rows = cursor.fetchall()
-
+        cursor.execute(email_query, (leave_dept, real_requester_emp_id))
+        rows = cursor.fetchall() or []
         depthead_emails = [r["email"] for r in rows if r.get("email")]
 
-        
-
+        # ✅ Detail query for pdf email
         detail_qry = f"""
-            SELECT *,
-                (SELECT d.department
-                 FROM `{Config.MYSQL_DB2}`.departments d
-                 WHERE d.dept_code = Leave_Details.department
-                 LIMIT 1
-                ) AS dept_code
-            FROM Leave_Details
-            LEFT JOIN `{Config.MYSQL_DB2}`.users
-                ON Leave_Details.emp_id = ticketing_dev.users.emp_id
-            WHERE ref_no = %s
+            SELECT ld.*,
+                   u.first_name, u.last_name, u.position, u.email,
+                   (SELECT d.department
+                    FROM `{Config.MYSQL_DB2}`.departments d
+                    WHERE d.dept_code = ld.department
+                    LIMIT 1) AS dept_code
+            FROM Leave_Details ld
+            LEFT JOIN `{Config.MYSQL_DB2}`.users u
+                   ON ld.emp_id = u.emp_id
+            WHERE ld.ref_no = %s
+            LIMIT 1
         """
-
-        department = (request.form.get("dept_code") or "").strip().upper()
-        print("dept_code:", repr(department))
-
-        cursor.execute("SELECT COUNT(*) as c FROM `{}`.`users`".format(Config.MYSQL_DB2))
-        print("users count:", cursor.fetchone())
-
-        cursor.execute(email_query, (department,))
-        rows = cursor.fetchall() or []
-        print("depthead rows:", rows)
-        print("depthead_emails:", [r.get("email") for r in rows])
-
 
         # ✅ if already approved, don't recompute/update/history again
         if args == "APPROVED" and current_status == "APPROVED":
             if pdf_file:
                 cursor.execute(detail_qry, (ref_no,))
-                all_list = cursor.fetchone()
+                all_list = cursor.fetchone() or {}
+
                 send_vl_leave_request_email(
                     mail,
-                    all_list['user'],
+                    all_list.get('user'),
                     ref_no,
-                    all_list['position'],
-                    all_list['dept_code'],
-                    all_list['leave_number'],
-                    all_list['leave_from'],
-                    all_list['leave_to'],
-                    all_list['leave_reason'],
-                    all_list['email'],
-                    all_list['leave_type'],
+                    all_list.get('position'),
+                    all_list.get('dept_code'),
+                    all_list.get('leave_number'),
+                    all_list.get('leave_from'),
+                    all_list.get('leave_to'),
+                    all_list.get('leave_reason'),
+                    all_list.get('email'),
+                    all_list.get('leave_type'),
                     depthead_emails=depthead_emails,
                     pdf_file=pdf_file
                 )
+
             cursor.close()
             return jsonify({"success": True, "args": args, "already_approved": True}), 200
 
         # ✅ recompute only when not yet approved
+        # emp_id must be requester emp_id (employee of this leave)
+        if not emp_id:
+            emp_id = real_requester_emp_id
+
         cursor.execute("""
             SELECT COALESCE(SUM(leave_number), 0) as used_vl
             FROM Leave_Details
             WHERE emp_id = %s AND status = 'APPROVED' AND leave_type IN ('VL','EL')
         """, (emp_id,))
-        used_vl = cursor.fetchone()["used_vl"]
+        used_vl = (cursor.fetchone() or {}).get("used_vl", 0)
 
         cursor.execute("""
             SELECT COALESCE(SUM(leave_number), 0) as used_sl
             FROM Leave_Details
             WHERE emp_id = %s AND status = 'APPROVED' AND leave_type = 'SL'
         """, (emp_id,))
-        used_sl = cursor.fetchone()["used_sl"]
+        used_sl = (cursor.fetchone() or {}).get("used_sl", 0)
 
         remaining_vl = max_leave - (used_vl + used_count)
         remaining_sl = max_leave - (used_sl + used_count)
@@ -647,6 +653,7 @@ def update_approved__deny_leaves():
 
             mysql.connection.commit()
 
+            # ✅ return updated values to frontend
             cursor.execute("""
                 SELECT status, approved_by, date_approved, vl_remaining, sl_remaining, leave_number, leave_type
                 FROM Leave_Details
@@ -655,28 +662,29 @@ def update_approved__deny_leaves():
             """, (ref_no,))
             updated = cursor.fetchone() or {}
 
+            # ✅ if pdf provided, send email
             if pdf_file:
                 cursor.execute(detail_qry, (ref_no,))
-                all_list = cursor.fetchone()
+                all_list = cursor.fetchone() or {}
+
                 send_vl_leave_request_email(
                     mail,
-                    all_list['user'],
+                    all_list.get('user'),
                     ref_no,
-                    all_list['position'],
-                    all_list['dept_code'],
-                    all_list['leave_number'],
-                    all_list['leave_from'],
-                    all_list['leave_to'],
-                    all_list['leave_reason'],
-                    all_list['email'],
-                    all_list['leave_type'],
+                    all_list.get('position'),
+                    all_list.get('dept_code'),
+                    all_list.get('leave_number'),
+                    all_list.get('leave_from'),
+                    all_list.get('leave_to'),
+                    all_list.get('leave_reason'),
+                    all_list.get('email'),
+                    all_list.get('leave_type'),
                     depthead_emails=depthead_emails,
                     pdf_file=pdf_file
                 )
 
             cursor.close()
 
-            # ✅ RETURN HERE so frontend receives updated values
             return jsonify({
                 "success": True,
                 "args": args,
@@ -684,24 +692,19 @@ def update_approved__deny_leaves():
                 "already_approved": False
             }), 200
 
-        elif args == "CANCELLED" :
-            cursor.execute(
-                "UPDATE  Leave_Details set status = %s WHERE ref_no = %s",(args, ref_no))
-            
-            cursor.execute(
-                """INSERT INTO leave_history (module, ref_no, action, `user`, history_date) 
-                VALUES (%s, %s, %s, %s, NOW())""",
-                ('CANCEL LEAVE', ref_no, 'Cancelled Leave', username)
-            )
-        else:
-            cursor.execute(
-                "UPDATE  Leave_Details set status = %s WHERE ref_no = %s",(args, ref_no))
-            
-            cursor.execute(
-                """INSERT INTO leave_history (module, ref_no, action, `user`, history_date) 
-                VALUES (%s, %s, %s, %s, NOW())""",
-                ('LEAVE APPROVAL', ref_no, 'Denied Leave', username)
-            )
+        elif args == "CANCELLED":
+            cursor.execute("UPDATE Leave_Details SET status=%s WHERE ref_no=%s", (args, ref_no))
+            cursor.execute("""
+                INSERT INTO leave_history (module, ref_no, action, `user`, history_date)
+                VALUES (%s, %s, %s, %s, NOW())
+            """, ('CANCEL LEAVE', ref_no, 'Cancelled Leave', username))
+
+        else:  # DENIED
+            cursor.execute("UPDATE Leave_Details SET status=%s WHERE ref_no=%s", (args, ref_no))
+            cursor.execute("""
+                INSERT INTO leave_history (module, ref_no, action, `user`, history_date)
+                VALUES (%s, %s, %s, %s, NOW())
+            """, ('LEAVE APPROVAL', ref_no, 'Denied Leave', username))
 
         mysql.connection.commit()
         cursor.close()
@@ -709,8 +712,7 @@ def update_approved__deny_leaves():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
-    
+  
 
 @leave_bp.route('/date_calendar', methods=['POST'])
 def get_calendar_date():
