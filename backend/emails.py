@@ -27,13 +27,13 @@ def send_leave_for_approval_email(
     header_text = "#111827"
 
     if job_title and job_title.strip().lower() == 'department head':
-      cc_email = ['isagunde.lourdesjoy@gmail.com']
+      cc_email = ['viki.thinkbridge@karamarcorporation.com']
     else:
         cc_email = []
 
     msg = Message(
         subject=f"Leave Request For Approval [{ref_no}]",
-        recipients=dept_head_emails or ['isagunde.lourdesjoy@gmail.com'],
+        recipients=dept_head_emails or ['viki.thinkbridge@karamarcorporation.com'],
         cc = cc_email,
         html=f"""
         <div style="margin:0;padding:0;background:#f6f7fb;">
@@ -136,9 +136,9 @@ def send_vl_leave_request_email(
 
     #RECEPIENT
     cc_emails = [
-        # "hrtimekeeping@ecofarmsys.com" # as hr
-        "isagunde.lourdesjoy@gmail.com", # as hr
-        "isagunde92@gmail.com" #as viki
+        "hrtimekeeping@ecofarmsys.com", # as hr
+        #"isagunde.lourdesjoy@gmail.com", # as hr
+        "viki.thinkbridge@karamarcorporation.com" #as viki
     ]
 
 
@@ -245,126 +245,8 @@ def send_vl_leave_request_email(
 
     mail.send(msg)
 
-# def send_otob_request_email(
-#     mail, user, ref_no, dept, actual_hrs,
-#     actual_from, actual_to, email,type,
-#     pdf_file=None
-# ):
-#     header_bg_map = {
-#         "OT": "#fff",
-#         "OB": "#38c4e0",
-       
-#     }
-#     if type == "OB":
-#         types = "Official Business"
-#     else:
-#         types = "Overtime"
-#     header_bg = header_bg_map.get(type, "#ffffff")  # fallback if unknown
-#     header_text = "#111827"  # readable for all above colors
 
-#     msg = Message(
-#         subject=f"Approved {types} Request [{ref_no}]",
-#         # recipients=[email],
-#         # # cc=["bernard.belleza@jewelmer.com"],
-#         recipients=["aldrin.canarejo@jewelmer.com"],
-#         cc=["lani.tirao@jewelmer.com"],
-#         html=f"""
-#                 <div style="margin:0;padding:0;background:#f6f7fb;">
-#                 <div style="max-width:640px;margin:0 auto;padding:24px 14px;font-family:Arial,Helvetica,sans-serif;color:#1f2937;">
-
-#                     <!-- Header -->
-#                      <div style="background:{header_bg};border:1px solid #e5e7eb;border-radius:12px;padding:18px;">
-#                   <div style="font-size:16px;font-weight:700;letter-spacing:.2px;color:{header_text};">
-#                     Approved {types} Request
-#                   </div>
-#                   <div style="margin-top:6px;font-size:13px;color:{header_text};opacity:.9;">
-#                     Reference Number: <b style="color:{header_text};">{ref_no}</b>
-#                     <span style="display:inline-block;margin-left:10px;padding:2px 10px;border-radius:999px;background:rgba(255,255,255,.6);border:1px solid rgba(17,24,39,.12);font-size:12px;font-weight:700;color:{header_text};text-transform:uppercase;">
-#                       {type}
-#                     </span>
-#                   </div>
-#                 </div>
-
-#                     <!-- Body -->
-#                     <div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;padding:18px;margin-top:12px;">
-#                     <p style="margin:0 0 10px;line-height:1.55;">Good day,</p>
-
-#                     <p style="margin:0 0 12px;line-height:1.55;">
-#                         Please be informed that the {type} request below has been
-#                         <b style="color:#16a34a;">APPROVED</b>.
-#                     </p>
-
-#                     <!-- Details Card -->
-#                     <div style="border:1px solid #e5e7eb;border-radius:10px;background:#fafafa;padding:12px;">
-#                         <table style="width:100%;border-collapse:collapse;font-size:13px;">
-#                         <tr>
-#                             <td style="padding:6px 0;color:#6b7280;width:40%;">Employee Name</td>
-#                             <td style="padding:6px 0;color:#111827;font-weight:600;">{user}</td>
-#                         </tr>
-#                         <tr>
-#                             <td style="padding:6px 0;color:#6b7280;">Department</td>
-#                             <td style="padding:6px 0;color:#111827;font-weight:600;">{dept}</td>
-#                         </tr>
-#                         <tr>
-#                             <td style="padding:6px 0;color:#6b7280;">Actual Hour(s) Rendered</td>
-#                             <td style="padding:6px 0;color:#111827;font-weight:600;">{actual_hrs}</td>
-#                         </tr>
-#                         <tr>
-#                             <td style="padding:6px 0;color:#6b7280;">Actual Date(s)</td>
-#                             <td style="padding:6px 0;color:#111827;font-weight:600;">{actual_from} to {actual_to}</td>
-#                         </tr>
-#                         </table>
-#                     </div>
-
-#                     <p style="margin:12px 0 0;line-height:1.55;">
-#                         The full details of the approved {types} form is attached for your reference.
-#                     </p>
-
-#                     <p style="margin:14px 0 0;line-height:1.55;">Thank you.</p>
-
-#                     <p style="margin:14px 0 0;line-height:1.55;">
-#                         Best Regards,<br>
-#                         <b>AMS Admin</b>
-#                     </p>
-#                     </div>
-
-#                     <!-- Footer -->
-#                     <div style="margin-top:4px;padding:12px 14px;color:#6b7280;font-size:12px;line-height:1.45;">
-#                     <div style="border-top:1px solid #e5e7eb;padding-top:12px;">
-#                         <i>
-#                         This is an auto-generated email. Please do not reply.
-#                         The attachment in this email serves as an official document of the employee’s leave records.
-#                         </i>
-#                     </div>
-#                     </div>
-
-#                 </div>
-#                 </div>
-#                 """
-
-#     )
-
-#     if pdf_file:
-#         try:
-#             pdf_file.stream.seek(0)
-#         except Exception:
-#             try:
-#                 pdf_file.seek(0)
-#             except Exception:
-#                 pass
-
-#         pdf_bytes = pdf_file.read()
-#         filename = getattr(pdf_file, "filename", None) or f"{ref_no}.pdf"
-
-#         msg.attach(
-#             filename=filename,
-#             content_type="application/pdf",
-#             data=pdf_bytes
-#         )
-
-#     mail.send(msg)
-
-
+#FINAL APPROVED
 def send_otob_request_email(
     mail,
     user,                 # employee full name
@@ -394,8 +276,9 @@ def send_otob_request_email(
 
     # ✅ same style as leave: recipients = dept heads, cc = hr + employee
     cc_emails = [
-        # "hrtimekeeping@ecofarmsys.com",  # HR
-        # "isagunde.lourdesjoy@gmail.com"
+         "hrtimekeeping@ecofarmsys.com",  # HR
+        #"isagunde.lourdesjoy@gmail.com", #as hr
+         "viki.thinkbridge@karamarcorporation.com" #as viki
     ]
     if employee_email:
         cc_emails.append(employee_email)
@@ -543,9 +426,10 @@ def send_otob_for_approval_email(
     type_label = "Overtime" if req_type == "OT" else "Official Business"
 
     if job_title and job_title.strip().lower() == 'department head':
-      cc_email = ['isagunde.lourdesjoy@gmail.com']
+      cc_email = ['viki.thinkbridge@karamarcorporation.com']
     else:
       cc_email = []
+      
 
     # destination display (include shop list if Shops)
     dest_display = destination
@@ -554,7 +438,7 @@ def send_otob_for_approval_email(
 
     msg = Message(
         subject=f"{type_label} Request For Approval [{ref_no}]",
-        recipients=dept_head_emails,
+        recipients=dept_head_emails or ['viki.thinkbridge@karamarcorporation.com'],
         cc = cc_email,
         html=f"""
         <div style="margin:0;padding:0;background:#f6f7fb;">
@@ -661,7 +545,9 @@ def send_otob_for_final_approval_email(
     actual_to,
     actual_hours,
     reason,
-    project
+    project,
+    req_email,
+    job_title,
 ):
     header_bg_map = {
         "OT": "#ffffff",
@@ -675,18 +561,22 @@ def send_otob_for_final_approval_email(
     dest_display = destination
     if destination == "Shops" and shop_location:
         dest_display = f"{destination} ({shop_location})"
-      
-    #RECEPIENT
-    cc_emails = [
-        # "hrtimekeeping@ecofarmsys.com" # as hr
-        "isagunde.lourdesjoy@gmail.com", # as hr
-        "isagunde92@gmail.com" #as viki
-    ]
+
+    if job_title and job_title.strip().lower() == "department head":
+        cc_email = ["viki.thinkbridge@karamarcorporation.com"]
+    else:
+        cc_email = []
+
+    cc = []
+    if req_email:
+        cc.append(req_email)
+    if cc_email:
+        cc.extend(cc_email)
+
 
     msg = Message(
         subject=f"{type_label} Request For FINAL Approval [{ref_no}]",
         recipients=dept_head_emails,
-        cc=cc_emails,
         html=f"""
         <div style="margin:0;padding:0;background:#f6f7fb;">
           <div style="max-width:640px;margin:0 auto;padding:24px 14px;font-family:Arial,Helvetica,sans-serif;color:#1f2937;">
@@ -788,8 +678,6 @@ def send_otob_for_final_approval_email(
 
     mail.send(msg)
 
-from flask_mail import Message  # type: ignore
-
 def send_for_pre_approved_email(
     mail,
     user,                 # employee full name
@@ -826,17 +714,8 @@ def send_for_pre_approved_email(
         # fallback if employee_email is not provided
         recipients = depthead_emails if isinstance(depthead_emails, list) else [depthead_emails]
 
-    project = project or "-"
-    reason = reason or "-"
-    category = category or "-"
-    destination = destination or "-"
-    dept = dept or "-"
-    user = user or "-"
-    req_from = req_from or "-"
-    req_to = req_to or "-"
-
     msg = Message(
-        subject=f"{type_label} Request For Approval [{ref_no}]",
+        subject=f"{type_label} Your Request is PRE-APPROVED[{ref_no}]",
         recipients=recipients,
         html=f"""
 <div style="margin:0;padding:0;background:#f6f7fb;">
@@ -896,7 +775,7 @@ def send_for_pre_approved_email(
           </tr>
           <tr>
             <td style="padding:6px 0;color:#6b7280;">Status</td>
-            <td style="padding:6px 0;color:#111827;font-weight:700;">FOR PRE-APPROVAL</td>
+            <td style="padding:6px 0;color:#111827;font-weight:700;">PRE-APPROVED</td>
           </tr>
         </table>
       </div>

@@ -582,7 +582,7 @@ def update_actual_date():
         actual_to = data.get("actual_to")
         actual_hours = data.get("actual_hours")
         fullName = data.get("user")
-        approver_emp_id = data.get("emp_id")  # ✅ send this from frontend if you can
+        approver_emp_id = data.get("emp_id") 
 
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
 
@@ -625,6 +625,7 @@ def update_actual_date():
         requester_emp_id = otob_details.get("emp_id")
         req_from_db = otob_details.get("req_from")
         req_to_db = otob_details.get("req_to")
+        req_email = otob_details.get("email")
 
         # ✅ dept head emails (exclude requester)
         email_query = f"""
@@ -639,6 +640,15 @@ def update_actual_date():
         cursor.execute(email_query, (dept_code, requester_emp_id))
         rows = cursor.fetchall() or []
         depthead_emails = [r["email"] for r in rows if r.get("email")]
+
+        cursor.execute(f"""
+                SELECT job_title
+                FROM `{Config.MYSQL_DB2}`.users
+                WHERE emp_id = %s
+                LIMIT 1
+            """, (requester_emp_id,))
+        u = cursor.fetchone() or {}
+        requester_job_title = u.get("job_title") or ""
 
         mysql.connection.commit()
         cursor.close()
@@ -661,7 +671,9 @@ def update_actual_date():
                 actual_to=format_dt(actual_to),
                 actual_hours=actual_hours,
                 reason=reason,
-                project=project
+                project=project,
+                req_email=req_email,
+                job_title=requester_job_title
             )
 
         return jsonify({"success": True, "ref_no": ref_number}), 201
