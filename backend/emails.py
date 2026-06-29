@@ -91,10 +91,20 @@ def send_leave_for_approval_email(
               </div>
 
               <p style="margin:12px 0 0;line-height:1.55;">
-                Please log in to AMS to review and approve/deny this request.
+                Please click the button below to review and approve/deny this request.
               </p>
 
+              <div style="margin-top:10px;text-align:center;">
+                  <a href="http://192.168.0.103:8081/"
+                    style="display:inline-block;padding:10px 18px;background:#2563eb;color:#ffffff;
+                            text-decoration:none;border-radius:6px;font-size:13px;font-weight:600;">
+                      View Request
+                  </a>
+              </div>
+
+
               <p style="margin:14px 0 0;line-height:1.55;">Thank you.</p>
+
 
               <p style="margin:14px 0 0;line-height:1.55;">
                 Best Regards,<br>
@@ -504,8 +514,16 @@ def send_otob_for_approval_email(
               </div>
 
               <p style="margin:12px 0 0;line-height:1.55;">
-                Please log in to AMS to review and approve/deny this request.
+                Please click the button below to review and approve/deny this request.
               </p>
+
+              <div style="margin-top:10px;text-align:center;">
+                  <a href="http://192.168.0.103:8081/"
+                    style="display:inline-block;padding:10px 18px;background:#2563eb;color:#ffffff;
+                            text-decoration:none;border-radius:6px;font-size:13px;font-weight:600;">
+                      View Request
+                  </a>
+              </div>
 
               <p style="margin:14px 0 0;line-height:1.55;">Thank you.</p>
 
@@ -653,8 +671,16 @@ def send_otob_for_final_approval_email(
               </div>
 
               <p style="margin:12px 0 0;line-height:1.55;">
-                Please log in to AMS to review and approve/deny this request.
+                Please click the button below to review and approve/deny this request.
               </p>
+
+              <div style="margin-top:10px;text-align:center;">
+                  <a href="http://192.168.0.103:8081/"
+                    style="display:inline-block;padding:10px 18px;background:#2563eb;color:#ffffff;
+                            text-decoration:none;border-radius:6px;font-size:13px;font-weight:600;">
+                      View Request
+                  </a>
+              </div>
 
               <p style="margin:14px 0 0;line-height:1.55;">Thank you.</p>
 
@@ -779,10 +805,6 @@ def send_for_pre_approved_email(
           </tr>
         </table>
       </div>
-
-      <p style="margin:12px 0 0;line-height:1.55;">
-        Please log in to AMS to review and approve/deny this request.
-      </p>
 
       <p style="margin:14px 0 0;line-height:1.55;">Thank you.</p>
 

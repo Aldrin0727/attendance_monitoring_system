@@ -243,14 +243,17 @@ export default {
 
       shops: [
         "Aurea G2",
+        "Aurea NGH",
         "RET ACC",
         "RET ATC",
+        "RET BAY",
         "RET G4",
         "RET GB5",
         "RET MCIA",
         "RET MEGAMALL",
         "RET MOA",
         "RET MPS",
+        "RET NAIA T3",
         "RET NUSTAR",
         "RET POD",
         "RET ROC",
@@ -325,22 +328,22 @@ export default {
         });
     },
 
-    hasOTOBConflict(from, to) {
-      const newFrom = new Date(from);
-      const newTo = new Date(to);
+    // hasOTOBConflict(from, to) {
+    //   const newFrom = new Date(from);
+    //   const newTo = new Date(to);
 
-      return this.existingRequests.some((req) => {
-        const oldFrom = new Date(req.req_from || req.leave_from);
-        const oldTo = new Date(req.req_to || req.leave_to);
-        return newFrom <= oldTo && newTo >= oldFrom;
-      });
-    },
+    //   return this.existingRequests.some((req) => {
+    //     const oldFrom = new Date(req.req_from || req.leave_from);
+    //     const oldTo = new Date(req.req_to || req.leave_to);
+    //     return newFrom <= oldTo && newTo >= oldFrom;
+    //   });
+    // },
 
     submitForm() {
       if (this.submitting) return;
 
       if (!this.selectedRequestType) {
-        Swal.fire("Error", "Please select OB or OT type", "error");
+        Swal.fire("Error", "Please select OB or OT type", "error"); 
         return;
       }
 
@@ -349,10 +352,10 @@ export default {
         return;
       }
 
-      if (this.hasOTOBConflict(this.ob_ot_form.date_from, this.ob_ot_form.date_to)) {
-        Swal.fire("Not Allowed", "This request overlaps with an existing OB/OT request.", "warning");
-        return;
-      }
+      // if (this.hasOTOBConflict(this.ob_ot_form.date_from, this.ob_ot_form.date_to)) {
+      //   Swal.fire("Not Allowed", "This request overlaps with an existing OB/OT request.", "warning");
+      //   return;
+      // }
 
       const formData = {
         emp_id: this.user.emp_id,
